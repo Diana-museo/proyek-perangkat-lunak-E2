@@ -19,6 +19,4 @@ jobs:
           node-version: '18'
 
       - name: Validate OpenAPI Spec
-        uses: char0n/swagger-editor-validator@v1
-        with:
-          path: 'openapi.yaml'
+        run: npx @apidevtools/swagger-cli validate openapi.yaml
