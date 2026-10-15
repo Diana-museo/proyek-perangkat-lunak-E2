@@ -19,8 +19,12 @@
 
 Modul **E-2** bertindak sebagai *nerve center* finansial bagi PT Anaheim Nimbus Universal. Sistem ini tidak melakukan transaksi manual, melainkan berfungsi sebagai **agregator** yang menghimpun, mengolah, dan menyajikan metrik arus kas, profitabilitas proyek, serta proyeksi keuangan secara *real-time* khusus untuk kebutuhan pengambilan keputusan tingkat direksi.
 
+---
+
 ### 🌐 Ekosistem Integrasi Lintas Modul
 E-2 terhubung secara terdistribusi dengan berbagai modul hulu dalam arsitektur ERP:
+
+* **Modul F-1 (Autentikasi & Manajemen Pengguna):** Validasi *Bearer Token*, manajemen sesi, dan kontrol hak akses berbasis peran (RBAC) untuk Direksi dan Kepala Finance.
 * **Modul D-1 (Registrasi Proyek):** Sinkronisasi master data proyek, alokasi anggaran, dan status operasional.
 * **Modul D-2 (Kontrak & Invoice):** Penarikan data tagihan masuk dan piutang klien.
 * **Modul E-1 (Pajak & e-Faktur):** Konsumsi ringkasan kewajiban pajak keluaran melalui endpoint agregasi.
