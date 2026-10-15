@@ -1,0 +1,11 @@
+{
+    "status": "success",
+    "code": 201,
+    "message": "Data pemasukan luar jadwal berhasil disimpan",
+    "data": {
+        "pemasukanId": "pms-manual-6ad155ccde381",
+        "nominal": 1500000,
+        "tanggalTransaksi": "2026-10-16",
+        "keterangan": "Sewa alat"
+    }
+}

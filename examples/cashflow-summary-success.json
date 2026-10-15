@@ -1,0 +1,11 @@
+{
+    "status": "success",
+    "code": 200,
+    "message": "Ringkasan arus kas modul E-2",
+    "data": {
+        "total_income": "15750000.00",
+        "total_expense": "750000.00",
+        "net_cash_flow": 15000000,
+        "currency": "IDR"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "status": "success",
+    "code": 200,
+    "message": "Indikator keuangan manajemen dan direksi",
+    "data": {
+        "realized_income": "15750000.00",
+        "realized_expense": "750000.00",
+        "net_cash_flow": 15000000,
+        "financial_health": "SEHAT (SURPLUS)",
+        "currency": "IDR"
+    }
+}

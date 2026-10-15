@@ -1,0 +1,5 @@
+{
+    "status": "error",
+    "code": 403,
+    "message": "Akses ditolak: Anda tidak memiliki hak akses Kepala Finance atau Direksi."
+}

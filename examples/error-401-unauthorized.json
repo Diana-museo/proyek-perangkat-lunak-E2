@@ -1,0 +1,5 @@
+{
+    "status": "error",
+    "code": 401,
+    "message": "Token otorisasi Bearer tidak valid atau telah kedaluwarsa."
+}

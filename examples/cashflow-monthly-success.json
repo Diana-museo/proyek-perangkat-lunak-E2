@@ -1,0 +1,13 @@
+{
+    "status": "success",
+    "code": 200,
+    "message": "Rekap arus kas bulanan tahun 2026",
+    "data": {
+        "October": {
+            "total_income": 15750000,
+            "total_expense": 750000,
+            "net": 15000000,
+            "transaction_count": 3
+        }
+    }
+}

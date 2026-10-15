@@ -1,0 +1,12 @@
+{
+    "status": "success",
+    "code": 200,
+    "message": "Detail arus kas untuk proyek: 01924b1e-7f32-7a81-9b12-45e8a1234567",
+    "data": {
+        "project_id": "01924b1e-7f32-7a81-9b12-45e8a1234567",
+        "total_income": 0,
+        "total_expense": 0,
+        "net_cash_flow": 0,
+        "transactions": []
+    }
+}

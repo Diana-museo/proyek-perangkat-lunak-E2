@@ -1,0 +1,74 @@
+openapi: 3.0.3
+info:
+  title: API Modul E-2 - Arus Kas dan Dasbor Keuangan Manajemen
+  version: 0.1.0
+  description: Kontrak API operasional untuk modul E-2 pencatatan arus kas luar jadwal dan pengeluaran operasional.
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Server Lokal Pengembangan
+paths:
+  /pemasukan-luar-jadwal:
+    post:
+      summary: Mencatat pemasukan manual di luar termin
+      operationId: API-KE2-01
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nominal
+                - tanggalTransaksi
+              properties:
+                nominal:
+                  type: number
+                  format: decimal
+                  example: 1500000.00
+                tanggalTransaksi:
+                  type: string
+                  format: date
+                  example: "2026-10-15"
+                keterangan:
+                  type: string
+                  example: "Sewa alat"
+      responses:
+        '201':
+          description: Berhasil disimpan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  code:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Data pemasukan luar jadwal berhasil disimpan"
+                  data:
+                    type: object
+                    properties:
+                      pemasukanId:
+                        type: string
+                        format: uuid
+                        example: "b5277180-8730-4e4f-9e73-0402b9e2c611"
+        '403':
+          description: Akses ditolak
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "error"
+                  code:
+                    type: integer
+                    example: 403
+                  message:
+                    type: string
+                    example: "Akses ditolak: Anda tidak memiliki hak akses Kepala Finance."

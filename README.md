@@ -1,58 +1,113 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div align="center">
+
+# 📊 E-2: Cash Flow & Executive Dashboard
+### Agregator Keuangan Terpadu & Dasbor Eksekutif Perusahaan
+**ERP PT Anaheim Nimbus Universal** · Capstone Project PPL Kelas E
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img alt="Laravel" src="https://img.shields.io/badge/Laravel-13.0-FF2D20?style=flat-square&logo=laravel&logoColor=white">
+  <img alt="PHP" src="https://img.shields.io/badge/PHP-8.4-777BB4?style=flat-square&logo=php&logoColor=white">
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16%2B-4169E1?style=flat-square&logo=postgresql&logoColor=white">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Production%20Ready-2EA44F?style=flat-square">
 </p>
 
-## About Laravel
+</div>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 💡 Tentang Modul E-2
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Modul **E-2** bertindak sebagai *nerve center* finansial bagi PT Anaheim Nimbus Universal. Sistem ini tidak melakukan transaksi manual, melainkan berfungsi sebagai **agregator** yang menghimpun, mengolah, dan menyajikan metrik arus kas, profitabilitas proyek, serta proyeksi keuangan secara *real-time* khusus untuk kebutuhan pengambilan keputusan tingkat direksi.
 
-## Learning Laravel
+### 🌐 Ekosistem Integrasi Lintas Modul
+E-2 terhubung secara terdistribusi dengan berbagai modul hulu dalam arsitektur ERP:
+* **Modul D-1 (Registrasi Proyek):** Sinkronisasi master data proyek, alokasi anggaran, dan status operasional.
+* **Modul D-2 (Kontrak & Invoice):** Penarikan data tagihan masuk dan piutang klien.
+* **Modul E-1 (Pajak & e-Faktur):** Konsumsi ringkasan kewajiban pajak keluaran melalui endpoint agregasi.
+* **Modul F-5 (Payroll & Gaji):** Rekapitulasi pengeluaran operasional rutin untuk pembayaran gaji pegawai.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## ⚡ Fitur Unggulan
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+* **Executive Financial Summary**: Visualisasi metrik kesehatan perusahaan (Total Kas Masuk, Keluar, dan *Net Cash Flow*) dalam satu layar tunggal.
+* **Project Profitability Drill-Down**: Analisis keuangan per proyek untuk memantau margin keuntungan dan perputaran kas tiap unit kerja.
+* **Automated Data Agregator**: Penggabungan otomatis data dari modul D-1, D-2, E-1, dan F-5 dengan mekanisme *fallback mock* untuk menjaga ketersediaan sistem.
+* **Secure Role-Based Access**: Pembatasan akses ketat yang memastikan hanya jajaran eksekutif (CEO, COO, Finance Manager) yang dapat melihat laporan finansial sensitif.
 
-## Agentic Development
+---
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## 🛠️ Spesifikasi Teknis & Prasyarat
 
+* **Bahasa & Framework**: PHP 8.4 & Laravel 13
+* **Database**: MySQL 8.0+
+* **Autentikasi**: Bearer Token (Integrasi dengan Modul F-1)
+
+---
+
+## 🚀 Panduan Instalasi Cepat
+
+1. **Clone dan pasang dependensi**
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+   composer install
+```
+2. **Konfigurasi Environment**
+```bash
+   cp .env.example .env
+   php artisan key:generate
+```
+3. **Migrasi dan Seed Data Demo**
+```bash
+   php artisan migrate:fresh --seed
+```
+4. **Jalankan Server Lokal**
+```bash
+   php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## 📡 Daftar Endpoint API Utama
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Endpoint | Metode | Deskripsi |
+|---|---|---|
+|/cashflow/summary|GET|Ringkasan arus kas masuk dan keluar global|
+|/cashflow|POST|Pencatatan transaksi kas lokal|
+|/cashflow/project/{projectId}|GET|Detail arus kas berdasarkan proyek tertentu|
+|/dashboard/financial-indicators|GET|Indikator keuangan manajemen dan direksi|
+|/dashboard/aggregated-summary|GET|Dasbor agregat dari modul D-1, D-2, E-1, F-5|
+|/pemasukan-luar-jadwal|POST|Pencatatan pemasukan manual di luar termin (BL-04)|
+|/pengeluaran-operasional|POST|Pencatatan pengeluaran operasional kantor (BL-13)|
 
-## Code of Conduct
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## 🔒 Keamanan & Penanganan Kesalahan
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Sistem menerapkan standar respons JSON seragam dengan kode status HTTP yang jelas:
 
-## License
+* 200 OK / 201 Created: Permintaan berhasil diproses atau data berhasil disimpan.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+* 401 UNAUTHORIZED (ERR-AUTH-401): Token akses tidak valid atau kedaluwarsa.
+
+* 403 FORBIDDEN (ERR-AUTH-403): Akun pengguna tidak memiliki hak akses tingkat eksekutif.
+
+* 503 UPSTREAM_SERVICE_UNAVAILABLE (ERR-DS-503): Modul hulu (D-2/E-1/F-5) mengalami kendala koneksi atau data belum final.
+
+---
+
+## 👥 Tim Pengembang
+
+Kelas : E
+Kelompok : 2
+Modul : E-2 | Arus Kas & Dasbor Keuangan
+
+| Anggota | NIM |
+|---|---|
+| Ariska Putri | 233040041 |
+| Haifa Zahirah Ramdhan | 233040051 |
+| Daffa Kamiliya Mufidah | 233040055 |
+| Ellen Aplida Zalni | 233040061 |
+| Emeralda Iffatud Diana | 233040065 |
+
+
