@@ -17,12 +17,12 @@ class ErpIntegrationService
     public function getProject($projectId)
     {
         $projectId = $projectId ?? "01924b1e-7f32-7a81-9b12-45e8a1234567";
-        
+        $baseUrl = env('SERVICE_D1_URL', 'http://localhost:3000');
+
         try {
-            // Coba ambil secara live (timeout 2 detik agar tidak lama menunggu)
             $response = Http::withToken($this->token)
                 ->timeout(2)
-                ->get("http://127.0.0.1:4010/projects/{$projectId}");
+                ->get("{$baseUrl}/api/v1/projects/{$projectId}");
 
             if ($response->successful()) {
                 return $response->json('data') ?? $response->json();
@@ -46,10 +46,12 @@ class ErpIntegrationService
     // 2. Modul D-2 (Kontrak & Termin)
     public function getTermins($projectId = null)
     {
+        $baseUrl = env('SERVICE_D2_URL', 'http://localhost:8000');
+
         try {
             $response = Http::withToken($this->token)
                 ->timeout(2)
-                ->get("http://localhost:8000/api/v1/termins", [
+                ->get("{$baseUrl}/api/v1/termins", [
                     'projectId' => $projectId
                 ]);
 
@@ -84,10 +86,12 @@ class ErpIntegrationService
     // 3. Modul E-1 (Pajak)
     public function getTaxSummary($taxPeriod, $projectId = null)
     {
+        $baseUrl = env('SERVICE_E1_URL', 'http://localhost:8080');
+
         try {
             $response = Http::withToken($this->token)
                 ->timeout(2)
-                ->get("http://localhost:8080/api/v1/tax/summary", [
+                ->get("{$baseUrl}/api/v1/tax/summary", [
                     'taxPeriod' => $taxPeriod,
                     'projectId' => $projectId
                 ]);
@@ -113,10 +117,12 @@ class ErpIntegrationService
     // 4. Modul F-5 (Payroll)
     public function getPayrollRekap($periodeId)
     {
+        $baseUrl = env('SERVICE_F5_URL', 'http://127.0.0.1:8000');
+
         try {
             $response = Http::withToken($this->token)
                 ->timeout(2)
-                ->get("http://127.0.0.1:8000/api/payroll/v1/rekap-biaya", [
+                ->get("{$baseUrl}/api/payroll/v1/rekap-biaya", [
                     'periodeId' => $periodeId
                 ]);
 

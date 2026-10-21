@@ -6,14 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\CashFlow;
 use App\Services\ErpIntegrationService;
 use Illuminate\Http\Request;
+use Exception;
 
 class CashFlowController extends Controller
 {
     // 1. Summary Lokal
     public function summary()
     {
-        $totalIncome = CashFlow::where('type', 'income')->sum('amount');
-        $totalExpense = CashFlow::where('type', 'expense')->sum('amount');
+        $totalIncome = (float) CashFlow::where('type', 'income')->sum('amount');
+        $totalExpense = (float) CashFlow::where('type', 'expense')->sum('amount');
         $netCashFlow = $totalIncome - $totalExpense;
 
         return response()->json([
@@ -21,9 +22,9 @@ class CashFlowController extends Controller
             'code' => 200,
             'message' => 'Ringkasan arus kas modul E-2',
             'data' => [
-                'total_income' => $totalIncome,
-                'total_expense' => $totalExpense,
-                'net_cash_flow' => $netCashFlow,
+                'total_income' => number_format($totalIncome, 2, '.', ''),
+                'total_expense' => number_format($totalExpense, 2, '.', ''),
+                'net_cash_flow' => number_format($netCashFlow, 2, '.', ''),
                 'currency' => 'IDR'
             ]
         ], 200);
@@ -57,8 +58,8 @@ class CashFlowController extends Controller
     {
         $cashFlows = CashFlow::where('project_id', $projectId)->get();
 
-        $totalIncome = $cashFlows->where('type', 'income')->sum('amount');
-        $totalExpense = $cashFlows->where('type', 'expense')->sum('amount');
+        $totalIncome = (float) $cashFlows->where('type', 'income')->sum('amount');
+        $totalExpense = (float) $cashFlows->where('type', 'expense')->sum('amount');
         $netCashFlow = $totalIncome - $totalExpense;
 
         return response()->json([
@@ -67,9 +68,9 @@ class CashFlowController extends Controller
             'message' => 'Detail arus kas untuk proyek: ' . $projectId,
             'data' => [
                 'project_id' => $projectId,
-                'total_income' => $totalIncome,
-                'total_expense' => $totalExpense,
-                'net_cash_flow' => $netCashFlow,
+                'total_income' => number_format($totalIncome, 2, '.', ''),
+                'total_expense' => number_format($totalExpense, 2, '.', ''),
+                'net_cash_flow' => number_format($netCashFlow, 2, '.', ''),
                 'transactions' => $cashFlows
             ]
         ], 200);
@@ -78,8 +79,8 @@ class CashFlowController extends Controller
     // 4. Indikator Keuangan
     public function financialIndicators()
     {
-        $totalIncome = CashFlow::where('type', 'income')->sum('amount');
-        $totalExpense = CashFlow::where('type', 'expense')->sum('amount');
+        $totalIncome = (float) CashFlow::where('type', 'income')->sum('amount');
+        $totalExpense = (float) CashFlow::where('type', 'expense')->sum('amount');
         $netCashFlow = $totalIncome - $totalExpense;
 
         return response()->json([
@@ -87,9 +88,9 @@ class CashFlowController extends Controller
             'code' => 200,
             'message' => 'Indikator keuangan manajemen dan direksi',
             'data' => [
-                'realized_income' => $totalIncome,
-                'realized_expense' => $totalExpense,
-                'net_cash_flow' => $netCashFlow,
+                'realized_income' => number_format($totalIncome, 2, '.', ''),
+                'realized_expense' => number_format($totalExpense, 2, '.', ''),
+                'net_cash_flow' => number_format($netCashFlow, 2, '.', ''),
                 'financial_health' => $netCashFlow >= 0 ? 'SEHAT (SURPLUS)' : 'DEFISIT',
                 'currency' => 'IDR'
             ]
@@ -105,12 +106,13 @@ class CashFlowController extends Controller
         $monthlyData = $cashFlows->groupBy(function($item) {
             return date('F', strtotime($item->transaction_date));
         })->map(function ($group) {
-            $income = $group->where('type', 'income')->sum('amount');
-            $expense = $group->where('type', 'expense')->sum('amount');
+            $income = (float) $group->where('type', 'income')->sum('amount');
+            $expense = (float) $group->where('type', 'expense')->sum('amount');
+            $net = $income - $expense;
             return [
-                'total_income' => $income,
-                'total_expense' => $expense,
-                'net' => $income - $expense,
+                'total_income' => number_format($income, 2, '.', ''),
+                'total_expense' => number_format($expense, 2, '.', ''),
+                'net' => number_format($net, 2, '.', ''),
                 'transaction_count' => $group->count()
             ];
         });
@@ -127,7 +129,7 @@ class CashFlowController extends Controller
     public function aggregatedDashboard(Request $request)
     {
         try {
-            $integration = new ErpIntegrationService();
+            $integration = new ErpIntegrationService($request->bearerToken());
 
             $projectId = $request->input('projectId');
             $taxPeriod = $request->input('taxPeriod', '2026-11');
@@ -157,19 +159,19 @@ class CashFlowController extends Controller
                 'message' => 'Agregat dasbor keuangan manajemen E-2 dari modul D-1, D-2, E-1, F-5',
                 'data' => [
                     'project_info' => $projectData,
-                    'projected_income_from_d2' => $projectedIncome,
-                    'tax_expense_from_e1' => $totalTaxExpense,
-                    'payroll_expense_from_f5' => $totalPayrollExpense,
-                    'net_cash_flow' => $netCashFlow,
+                    'projected_income_from_d2' => number_format($projectedIncome, 2, '.', ''),
+                    'tax_expense_from_e1' => number_format($totalTaxExpense, 2, '.', ''),
+                    'payroll_expense_from_f5' => number_format($totalPayrollExpense, 2, '.', ''),
+                    'net_cash_flow' => number_format($netCashFlow, 2, '.', ''),
                     'financial_health' => $netCashFlow >= 0 ? 'SEHAT (SURPLUS)' : 'DEFISIT',
                     'currency' => 'IDR'
                 ]
             ], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'code' => 503,
-                'message' => 'Data belum tersedia. Gagal menyinkronkan data dari modul sumber: ' . $e->getMessage()
+                'message' => 'ERR-DS-503: Data belum tersedia. Gagal menyinkronkan data dari modul sumber: ' . $e->getMessage()
             ], 503);
         }
     }
