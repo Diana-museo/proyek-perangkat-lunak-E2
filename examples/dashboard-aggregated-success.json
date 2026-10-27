@@ -1,22 +1,17 @@
 {
     "status": "success",
-    "code": 200,
-    "message": "Agregat dasbor keuangan manajemen E-2 dari modul D-1, D-2, E-1, F-5",
+    "code": "E2-200",
+    "message": "Agregasi dasbor eksekutif berhasil dimuat",
     "data": {
-        "project_info": {
-            "projectId": "01924b1e-7f32-7a81-9b12-45e8a1234567",
-            "canonicalCode": "202601",
-            "projectName": "Implementasi Sistem ERP Cloud Anaheim Tahap 1 [Live Offline - Mock Mode]",
-            "clientId": "PTANTRI",
-            "clientName": "PT Anaheim Nimbus Universal",
-            "poReceived": true,
-            "status": "REGISTERED"
-        },
-        "projected_income_from_d2": 250000000,
-        "tax_expense_from_e1": 11000000,
-        "payroll_expense_from_f5": 37425000,
-        "net_cash_flow": 201575000,
-        "financial_health": "SEHAT (SURPLUS)",
-        "currency": "IDR"
+        "total_projected_income": "250000000.00",
+        "total_tax_expense": "11000000.00",
+        "total_payroll_expense": "37685000.00",
+        "net_cash_flow": "201315000.00",
+        "currency": "IDR",
+        "breakdown_sources": {
+            "d2_termins_count": 2,
+            "e1_tax_period": "2026-11",
+            "f5_periode_id": "01a1193d-2500-7c04-854b-8bf03c711dde"
+        }
     }
 }

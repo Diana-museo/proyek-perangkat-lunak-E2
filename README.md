@@ -90,13 +90,17 @@ E-2 terhubung secara terdistribusi dengan berbagai modul hulu dalam arsitektur E
 
 Sistem menerapkan standar respons JSON seragam dengan kode status HTTP yang jelas:
 
-* 200 OK / 201 Created: Permintaan berhasil diproses atau data berhasil disimpan.
+* 200 OK: Permintaan berhasil diproses.
 
-* 401 UNAUTHORIZED (ERR-AUTH-401): Token akses tidak valid atau kedaluwarsa.
+* 400 Bad Request (ERR-REQ-400): Parameter query yang dikirimkan tidak valid (misalnya format taxPeriod salah atau projectId kosong).
+
+* 401 Unauthorized (ERR-AUTH-401): Token akses tidak valid, kedaluwarsa, atau tidak disertakan pada header Authorization.
 
 * 403 FORBIDDEN (ERR-AUTH-403): Akun pengguna tidak memiliki hak akses tingkat eksekutif.
 
-* 503 UPSTREAM_SERVICE_UNAVAILABLE (ERR-DS-503): Modul hulu (D-2/E-1/F-5) mengalami kendala koneksi atau data belum final.
+* 404 Not Found (ERR-NOT-FOUND-404): Data atau ID Proyek (projectId) spesifik tidak ditemukan pada sistem sumber hulu.
+
+* 503 UPSTREAM_SERVICE_UNAVAILABLE (ERR-DS-503): Modul hulu (D-2/E-1/F-5) mengalami kendala koneksi, timeout (lebih dari 2 detik), atau data belum final.
 
 ---
 

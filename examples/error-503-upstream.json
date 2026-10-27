@@ -1,5 +1,5 @@
 {
     "status": "error",
-    "code": 503,
-    "message": "Data belum tersedia. Gagal menyinkronkan data dari modul sumber (D-2/F-5/E-1)."
+    "code": "ERR-DS-503",
+    "message": "Modul hulu mengalami kendala koneksi atau data belum final: Koneksi ke server hulu E-1 Pajak mengalami timeout (2000ms)."
 }

@@ -1,5 +1,5 @@
 {
     "status": "error",
-    "code": 401,
-    "message": "Token otorisasi Bearer tidak valid atau telah kedaluwarsa."
+    "code": "ERR-AUTH-401",
+    "message": "Token akses tidak valid atau kedaluwarsa."
 }

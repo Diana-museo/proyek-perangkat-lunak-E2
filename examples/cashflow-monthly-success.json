@@ -1,13 +1,94 @@
 {
     "status": "success",
-    "code": 200,
-    "message": "Rekap arus kas bulanan tahun 2026",
+    "code": "E2-200",
+    "message": "Data tren arus kas bulanan berhasil dimuat",
     "data": {
-        "October": {
-            "total_income": 15750000,
-            "total_expense": 750000,
-            "net": 15000000,
-            "transaction_count": 3
-        }
+        "year": "2026",
+        "trend": [
+            {
+                "month": "2026-01",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-02",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-03",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-04",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-05",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-06",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-07",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-08",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-09",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-10",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-11",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            },
+            {
+                "month": "2026-12",
+                "total_income": "25000000.00",
+                "total_tax_expense": "11000000.00",
+                "total_payroll_expense": "37685000.00",
+                "net_cash_flow": "-23685000.00"
+            }
+        ]
     }
 }

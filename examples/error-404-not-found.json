@@ -1,0 +1,5 @@
+{
+    "status": "error",
+    "code": "ERR-NOT-FOUND-404",
+    "message": "Data proyek dengan ID 'proyek-tidak-ada' tidak ditemukan."
+}

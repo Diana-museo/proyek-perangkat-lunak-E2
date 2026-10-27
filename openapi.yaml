@@ -1,40 +1,97 @@
 openapi: 3.0.3
 info:
-  title: API Modul E-2 - Arus Kas dan Dasbor Keuangan Manajemen
-  version: 0.1.0
-  description: Kontrak API operasional untuk modul E-2 pencatatan arus kas luar jadwal dan pengeluaran operasional.
+  title: API Modul E-2 - Executive Financial Aggregator
+  version: 1.0.0
+  description: Kontrak API read-only untuk agregasi dasbor keuangan eksekutif, tren arus kas bulanan, profitabilitas proyek, dan indikator kesehatan finansial dari sistem hulu ERP.
 servers:
   - url: http://localhost:8000/api/v1
     description: Server Lokal Pengembangan
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Masukkan token akses eksekutif (Gunakan invalid-token untuk simulasi 403)
+  responses:
+    UnauthorizedError:
+      description: Token akses tidak valid atau kedaluwarsa.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: "error"
+              code:
+                type: string
+                example: "ERR-AUTH-401"
+              message:
+                type: string
+                example: "Token akses tidak valid atau kedaluwarsa."
+    ForbiddenError:
+      description: Akun pengguna tidak memiliki hak akses tingkat eksekutif.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: "error"
+              code:
+                type: string
+                example: "ERR-AUTH-403"
+              message:
+                type: string
+                example: "Akun pengguna tidak memiliki hak akses tingkat eksekutif."
+    UpstreamError:
+      description: Kendala pada modul hulu ERP.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: "error"
+              code:
+                type: string
+                example: "ERR-DS-503"
+              message:
+                type: string
+                example: "Modul hulu mengalami kendala koneksi atau data belum final."
+
+security:
+  - BearerAuth: []
+
 paths:
-  /pemasukan-luar-jadwal:
-    post:
-      summary: Mencatat pemasukan manual di luar termin
-      operationId: API-KE2-01
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - nominal
-                - tanggalTransaksi
-              properties:
-                nominal:
-                  type: number
-                  format: decimal
-                  example: 1500000.00
-                tanggalTransaksi:
-                  type: string
-                  format: date
-                  example: "2026-10-15"
-                keterangan:
-                  type: string
-                  example: "Sewa alat"
+  /dashboard/aggregated-summary:
+    get:
+      summary: Ringkasan Eksekutif & Net Cash Flow
+      operationId: getAggregatedSummary
+      parameters:
+        - name: taxPeriod
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "2026-11"
+        - name: periodeId
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "01a1193d-2500-7c04-854b-8bf03c711dde"
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "proyek-asal-123"
       responses:
-        '201':
-          description: Berhasil disimpan
+        '200':
+          description: Berhasil memuat agregasi dasbor
           content:
             application/json:
               schema:
@@ -44,20 +101,52 @@ paths:
                     type: string
                     example: "success"
                   code:
-                    type: integer
-                    example: 201
+                    type: string
+                    example: "E2-200"
                   message:
                     type: string
-                    example: "Data pemasukan luar jadwal berhasil disimpan"
+                    example: "Agregasi dasbor eksekutif berhasil dimuat"
                   data:
                     type: object
-                    properties:
-                      pemasukanId:
-                        type: string
-                        format: uuid
-                        example: "b5277180-8730-4e4f-9e73-0402b9e2c611"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Akses ditolak
+          $ref: '#/components/responses/ForbiddenError'
+        '503':
+          $ref: '#/components/responses/UpstreamError'
+
+  /cashflow/monthly:
+    get:
+      summary: Cash Flow Summary & Monthly Trend
+      operationId: getMonthlyTrend
+      parameters:
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "2026"
+      responses:
+        '200':
+          description: Berhasil memuat tren bulanan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  code:
+                    type: string
+                    example: "E2-200"
+                  message:
+                    type: string
+                    example: "Data tren arus kas bulanan berhasil dimuat"
+                  data:
+                    type: object
+        '400':
+          description: Parameter query year tidak valid.
           content:
             application/json:
               schema:
@@ -67,8 +156,99 @@ paths:
                     type: string
                     example: "error"
                   code:
-                    type: integer
-                    example: 403
+                    type: string
+                    example: "ERR-REQ-400"
                   message:
                     type: string
-                    example: "Akses ditolak: Anda tidak memiliki hak akses Kepala Finance."
+                    example: "Parameter query year tidak valid. Gunakan format tahun 4 digit (misal: 2026)."
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '503':
+          $ref: '#/components/responses/UpstreamError'
+
+  /cashflow/project/{projectId}:
+    get:
+      summary: Project Profitability Drill-Down
+      operationId: getProjectDetail
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "proyek-asal-123"
+      responses:
+        '200':
+          description: Berhasil memuat detail profitabilitas proyek
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  code:
+                    type: string
+                    example: "E2-200"
+                  message:
+                    type: string
+                    example: "Detail profitabilitas proyek berhasil dimuat"
+                  data:
+                    type: object
+        '400':
+          description: Parameter projectId wajib diisi.
+        '404':
+          description: Data proyek spesifik tidak ditemukan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "error"
+                  code:
+                    type: string
+                    example: "ERR-NOT-FOUND-404"
+                  message:
+                    type: string
+                    example: "Data proyek dengan ID 'proyek-asal-123' tidak ditemukan."
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '503':
+          $ref: '#/components/responses/UpstreamError'
+
+  /dashboard/financial-indicators:
+    get:
+      summary: Financial Indicators & Health Status
+      operationId: getFinancialIndicators
+      responses:
+        '200':
+          description: Berhasil mengevaluasi indikator kesehatan finansial
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  code:
+                    type: string
+                    example: "E2-200"
+                  message:
+                    type: string
+                    example: "Indikator kesehatan finansial berhasil dievaluasi"
+                  data:
+                    type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '503':
+          $ref: '#/components/responses/UpstreamError'

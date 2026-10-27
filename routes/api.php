@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\CashFlowController;
+use App\Http\Controllers\Api\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,15 +12,28 @@ use App\Http\Controllers\Api\V1\CashFlowController;
 */
 
 Route::prefix('v1')->group(function () {
-    // Rute dasar pencatatan dan ringkasan lokal E-2
-    Route::get('/cashflow/summary', [CashFlowController::class, 'summary']);
-    Route::post('/cashflow', [CashFlowController::class, 'store']);
-    Route::get('/cashflow/project/{projectId}', [CashFlowController::class, 'getByProject']);
-    Route::get('/dashboard/financial-indicators', [CashFlowController::class, 'financialIndicators']);
-    Route::get('/cashflow/monthly', [CashFlowController::class, 'monthlyReport']);
-    Route::get('/dashboard/aggregated-summary', [CashFlowController::class, 'aggregatedDashboard']);
+    // Rute API Modul E-2 (Pure Read-Only Aggregator)
+    // 1. Ringkasan Eksekutif & Net Cash Flow
+    Route::get('/dashboard/aggregated-summary', [DashboardController::class, 'aggregatedSummary']);
+    
+    // 2. Trend Arus Kas Bulanan
+    Route::get('/cashflow/monthly', [DashboardController::class, 'monthlyTrend']);
+    
+    // 3. Detail Profitabilitas Proyek Drill-Down
+    Route::get('/cashflow/project/{projectId}', [DashboardController::class, 'projectDetail']);
+    
+    // 4. Indikator Kesehatan Finansial
+    Route::get('/dashboard/financial-indicators', [DashboardController::class, 'financialIndicators']);
+    
+    // // Rute dasar pencatatan dan ringkasan lokal E-2
+    // Route::get('/cashflow/summary', [CashFlowController::class, 'summary']);
+    // Route::post('/cashflow', [CashFlowController::class, 'store']);
+    // Route::get('/cashflow/project/{projectId}', [CashFlowController::class, 'getByProject']);
+    // Route::get('/dashboard/financial-indicators', [CashFlowController::class, 'financialIndicators']);
+    // Route::get('/cashflow/monthly', [CashFlowController::class, 'monthlyReport']);
+    // Route::get('/dashboard/aggregated-summary', [CashFlowController::class, 'aggregatedDashboard']);
 
-    // Rute internal E-2 (BL-04 & BL-13)
-    Route::post('/pemasukan-luar-jadwal', [CashFlowController::class, 'storePemasukanLuarJadwal']);
-    Route::post('/pengeluaran-operasional', [CashFlowController::class, 'storePengeluaranOperasional']);
+    // // Rute internal E-2 (BL-04 & BL-13)
+    // Route::post('/pemasukan-luar-jadwal', [CashFlowController::class, 'storePemasukanLuarJadwal']);
+    // Route::post('/pengeluaran-operasional', [CashFlowController::class, 'storePengeluaranOperasional']);
 });

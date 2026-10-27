@@ -127,6 +127,7 @@ class CashFlowController extends Controller
     public function aggregatedDashboard(Request $request)
     {
         try {
+            // throw new \Exception("ERR-DS-503: Upstream service (D-2/E-1/F-5) timeout or offline");
             $integration = new ErpIntegrationService();
 
             $projectId = $request->input('projectId');

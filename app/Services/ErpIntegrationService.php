@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ErpIntegrationService
 {
@@ -19,7 +20,6 @@ class ErpIntegrationService
         $projectId = $projectId ?? "01924b1e-7f32-7a81-9b12-45e8a1234567";
         
         try {
-            // Coba ambil secara live (timeout 2 detik agar tidak lama menunggu)
             $response = Http::withToken($this->token)
                 ->timeout(2)
                 ->get("http://127.0.0.1:4010/projects/{$projectId}");
@@ -27,15 +27,19 @@ class ErpIntegrationService
             if ($response->successful()) {
                 return $response->json('data') ?? $response->json();
             }
+            
+            // Catat log jika server merespons tapi statusnya bukan 200 OK
+            Log::warning("D-1 Live Server mengembalikan status non-success: " . $response->status());
         } catch (\Exception $e) {
-            // Server live mati/tidak aktif, abaikan dan lanjut ke mock
+            // Catat log jika gagal koneksi / timeout / server mati
+            Log::warning("Gagal koneksi ke D-1 Live Server, beralih ke Mock. Error: " . $e->getMessage());
         }
 
         // FALLBACK: Mock Data D-1
         return [
             "projectId" => $projectId,
             "canonicalCode" => "202601",
-            "projectName" => "Implementasi Sistem ERP Cloud Anaheim Tahap 1 [Live Offline - Mock Mode]",
+            "projectName" => "Implementasi Sistem ERP Cloud Anaheim Tahap 1",
             "clientId" => "PTANTRI",
             "clientName" => "PT Anaheim Nimbus Universal",
             "poReceived" => true,
@@ -56,8 +60,10 @@ class ErpIntegrationService
             if ($response->successful()) {
                 return $response->json('data.items') ?? [];
             }
+
+            Log::warning("D-2 Live Server mengembalikan status non-success: " . $response->status());
         } catch (\Exception $e) {
-            // Server live mati, pakai mock
+            Log::warning("Gagal koneksi ke D-2 Live Server, beralih ke Mock. Error: " . $e->getMessage());
         }
 
         // FALLBACK: Mock Data D-2
@@ -95,8 +101,10 @@ class ErpIntegrationService
             if ($response->successful()) {
                 return $response->json('data') ?? $response->json();
             }
+
+            Log::warning("E-1 Live Server mengembalikan status non-success: " . $response->status());
         } catch (\Exception $e) {
-            // Server live mati, pakai mock
+            Log::warning("Gagal koneksi ke E-1 Live Server, beralih ke Mock. Error: " . $e->getMessage());
         }
 
         // FALLBACK: Mock Data E-1
@@ -123,8 +131,10 @@ class ErpIntegrationService
             if ($response->successful()) {
                 return $response->json();
             }
+
+            Log::warning("F-5 Live Server mengembalikan status non-success: " . $response->status());
         } catch (\Exception $e) {
-            // Server live mati, pakai mock
+            Log::warning("Gagal koneksi ke F-5 Live Server, beralih ke Mock. Error: " . $e->getMessage());
         }
 
         // FALLBACK: Mock Data F-5
@@ -133,6 +143,7 @@ class ErpIntegrationService
             "namaPeriode" => "Oktober 2026",
             "jumlahKaryawan" => 5,
             "totalGajiBersih" => 37425000.0,
+            "totalBpjsPerusahaan" => 260000.0,
             "totalTermin" => 25000000.0
         ];
     }

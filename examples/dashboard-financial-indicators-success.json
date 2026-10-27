@@ -1,12 +1,15 @@
 {
     "status": "success",
-    "code": 200,
-    "message": "Indikator keuangan manajemen dan direksi",
+    "code": "E2-200",
+    "message": "Indikator kesehatan finansial berhasil dievaluasi",
     "data": {
-        "realized_income": "15750000.00",
-        "realized_expense": "750000.00",
-        "net_cash_flow": 15000000,
-        "financial_health": "SEHAT (SURPLUS)",
-        "currency": "IDR"
+        "health_status": "HEALTHY",
+        "description": "Arus kas dan beban operasional dalam kondisi seimbang.",
+        "metrics": {
+            "tax_payment_status": "CONFIRMED",
+            "payroll_period_name": "Oktober 2026",
+            "total_projected_inflow": "250000000.00",
+            "total_outflow_expenses": "48425000.00"
+        }
     }
 }

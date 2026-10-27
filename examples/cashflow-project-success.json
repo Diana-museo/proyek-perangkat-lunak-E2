@@ -1,12 +1,39 @@
 {
     "status": "success",
-    "code": 200,
-    "message": "Detail arus kas untuk proyek: 01924b1e-7f32-7a81-9b12-45e8a1234567",
+    "code": "E2-200",
+    "message": "Detail profitabilitas proyek berhasil dimuat",
     "data": {
-        "project_id": "01924b1e-7f32-7a81-9b12-45e8a1234567",
-        "total_income": 0,
-        "total_expense": 0,
-        "net_cash_flow": 0,
-        "transactions": []
+        "project_metadata": {
+            "projectId": "01924b1e-7f32-7a81-9b12-45e8a1234567",
+            "canonicalCode": "202601",
+            "projectName": "Implementasi Sistem ERP Cloud Anaheim Tahap 1",
+            "clientId": "PTANTRI",
+            "clientName": "PT Anaheim Nimbus Universal",
+            "poReceived": true,
+            "status": "REGISTERED"
+        },
+        "financial_summary": {
+            "total_project_income": "250000000.00",
+            "total_project_tax": "11000000.00",
+            "net_project_profit": "239000000.00"
+        },
+        "raw_termins": [
+            {
+                "terminId": "trm-demo-001",
+                "terminNumber": 1,
+                "terminValue": "100000000.00",
+                "dueDate": "2026-10-15",
+                "status": "SIAP_DITAGIH",
+                "projectId": "01924b1e-7f32-7a81-9b12-45e8a1234567"
+            },
+            {
+                "terminId": "trm-demo-002",
+                "terminNumber": 2,
+                "terminValue": "150000000.00",
+                "dueDate": "2026-12-15",
+                "status": "SIAP_DITAGIH",
+                "projectId": "01924b1e-7f32-7a81-9b12-45e8a1234567"
+            }
+        ]
     }
 }

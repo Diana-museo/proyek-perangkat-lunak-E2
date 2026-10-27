@@ -1,0 +1,5 @@
+{
+    "status": "error",
+    "code": "ERR-REQ-400",
+    "message": "Parameter query year tidak valid. Gunakan format tahun 4 digit (misal: 2026)."
+}
