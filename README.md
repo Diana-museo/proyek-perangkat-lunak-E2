@@ -1,7 +1,7 @@
 <div align="center">
 
 # 📊 E-2: Cash Flow & Executive Dashboard
-### Agregator Keuangan Terpadu & Dasbor Eksekutif Perusahaan
+### Agregator Keuangan Terpadu & Dasbor Eksekutif Perusahaan (Stateless Read-Only)
 **ERP PT Anaheim Nimbus Universal** · Capstone Project PPL Kelas E
 
 <p align="center">
@@ -17,35 +17,37 @@
 
 ## 💡 Tentang Modul E-2
 
-Modul **E-2** bertindak sebagai *nerve center* finansial bagi PT Anaheim Nimbus Universal. Sistem ini tidak melakukan transaksi manual, melainkan berfungsi sebagai **agregator** yang menghimpun, mengolah, dan menyajikan metrik arus kas, profitabilitas proyek, serta proyeksi keuangan secara *real-time* khusus untuk kebutuhan pengambilan keputusan tingkat direksi.
+Modul **E-2** bertindak sebagai *nerve center* finansial bagi PT Anaheim Nimbus Universal. Modul ini beroperasi secara **stateless dan read-only**, artinya modul ini tidak menyimpan database transaksi mandiri atau menerima input manual, melainkan berfungsi murni sebagai **agregator terdistribusi** yang menghimpun, mengolah, dan menyajikan metrik arus kas, profitabilitas proyek, serta indikator kesehatan keuangan secara *real-time* dari berbagai sistem hulu ERP untuk kebutuhan direksi.
 
 ---
 
 ### 🌐 Ekosistem Integrasi Lintas Modul
 E-2 terhubung secara terdistribusi dengan berbagai modul hulu dalam arsitektur ERP:
 
-* **Modul F-1 (Autentikasi & Manajemen Pengguna):** Validasi *Bearer Token*, manajemen sesi, dan kontrol hak akses berbasis peran (RBAC) untuk Direksi dan Kepala Finance.
-* **Modul D-1 (Registrasi Proyek):** Sinkronisasi master data proyek, alokasi anggaran, dan status operasional.
-* **Modul D-2 (Kontrak & Invoice):** Penarikan data tagihan masuk dan piutang klien.
-* **Modul E-1 (Pajak & e-Faktur):** Konsumsi ringkasan kewajiban pajak keluaran melalui endpoint agregasi.
-* **Modul F-5 (Payroll & Gaji):** Rekapitulasi pengeluaran operasional rutin untuk pembayaran gaji pegawai.
+- **Modul F-1 (Autentikasi & Manajemen Pengguna):** Validasi *Bearer Token*, manajemen sesi, dan kontrol hak akses berbasis peran (RBAC) untuk Direksi dan Kepala Finance.
+- **Modul D-1 (Registrasi Proyek):** Sinkronisasi master data proyek, alokasi anggaran, dan status operasional.
+- **Modul D-2 (Kontrak & Invoice):** Penarikan data tagihan masuk, termin, dan piutang klien.
+- **Modul E-1 (Pajak & e-Faktur):** Konsumsi ringkasan kewajiban pajak keluaran melalui endpoint agregasi.
+- **Modul F-5 (Payroll & Gaji):** Rekapitulasi pengeluaran operasional rutin untuk pembayaran gaji pegawai.
 
 ---
 
 ## ⚡ Fitur Unggulan
 
-* **Executive Financial Summary**: Visualisasi metrik kesehatan perusahaan (Total Kas Masuk, Keluar, dan *Net Cash Flow*) dalam satu layar tunggal.
-* **Project Profitability Drill-Down**: Analisis keuangan per proyek untuk memantau margin keuntungan dan perputaran kas tiap unit kerja.
-* **Automated Data Agregator**: Penggabungan otomatis data dari modul D-1, D-2, E-1, dan F-5 dengan mekanisme *fallback mock* untuk menjaga ketersediaan sistem.
-* **Secure Role-Based Access**: Pembatasan akses ketat yang memastikan hanya jajaran eksekutif (CEO, COO, Finance Manager) yang dapat melihat laporan finansial sensitif.
+- **Executive Financial Summary (`/dashboard/aggregated-summary`)**: Agregasi metrik kesehatan perusahaan secara global (Total Proyeksi Pendapatan, Beban Pajak, Beban Payroll, dan *Net Cash Flow*).
+- **Monthly Trend Analysis (`/cashflow/monthly`)**: Visualisasi tren arus kas bulanan berdasarkan parameter tahun operasional.
+- **Project Profitability Drill-Down (`/cashflow/project/{projectId}`)**: Analisis keuangan mendalam per proyek untuk memantau profitabilitas dan performa finansial tiap unit kerja.
+- **Financial Health Indicators (`/dashboard/financial-indicators`)**: Evaluasi indikator kesehatan finansial perusahaan secara otomatis.
+- **Secure Executive RBAC**: Pembatasan akses ketat berbasis *Bearer Token* yang memastikan hanya jajaran eksekutif yang berhak mengakses laporan finansial.
 
 ---
 
 ## 🛠️ Spesifikasi Teknis & Prasyarat
 
-* **Bahasa & Framework**: PHP 8.4 & Laravel 13
-* **Database**: MySQL 8.0+
-* **Autentikasi**: Bearer Token (Integrasi dengan Modul F-1)
+- **Bahasa & Framework**: PHP 8.4 & Laravel 13
+- **Database**: PostgreSQL / MySQL
+- **Autentikasi**: Bearer Token (Integrasi dengan Modul F-1 & Validasi Eksekutif)
+- **Testing**: Laravel Feature Tests (`DashboardApiTest`)
 
 ---
 
@@ -53,7 +55,7 @@ E-2 terhubung secara terdistribusi dengan berbagai modul hulu dalam arsitektur E
 
 1. **Clone dan pasang dependensi**
 ```bash
-   composer install
+composer install
 ```
 2. **Konfigurasi Environment**
 ```bash
@@ -73,16 +75,12 @@ E-2 terhubung secara terdistribusi dengan berbagai modul hulu dalam arsitektur E
 
 ## 📡 Daftar Endpoint API Utama
 
-| Endpoint | Metode | Deskripsi |
-|---|---|---|
-|/cashflow/summary|GET|Ringkasan arus kas masuk dan keluar global|
-|/cashflow|POST|Pencatatan transaksi kas lokal|
-|/cashflow/project/{projectId}|GET|Detail arus kas berdasarkan proyek tertentu|
-|/dashboard/financial-indicators|GET|Indikator keuangan manajemen dan direksi|
-|/dashboard/aggregated-summary|GET|Dasbor agregat dari modul D-1, D-2, E-1, F-5|
-|/pemasukan-luar-jadwal|POST|Pencatatan pemasukan manual di luar termin (BL-04)|
-|/pengeluaran-operasional|POST|Pencatatan pengeluaran operasional kantor (BL-13)|
-
+| Endpoint | Metode | Deskripsi | Status Code |
+|---|---|---|---|
+|/api/dashboard/aggregated-summary|GET|Dasbor agregat dari modul D-1, D-2, E-1, F-5| 200, 401, 403, 503 |
+|/api/v1/cashflow/monthly|GET|Tren arus kas bulanan|200, 400, 401, 403, 503|
+|/cashflow/project/{projectId}|GET|Detail profitabilitas dan arus kas proyek tertentu|200, 400, 404, 401, 403, 503|
+|/dashboard/financial-indicators|GET|Evaluasi indikator kesehatan finansial perusahaan|200, 401, 403, 503|
 
 ---
 
@@ -90,9 +88,9 @@ E-2 terhubung secara terdistribusi dengan berbagai modul hulu dalam arsitektur E
 
 Sistem menerapkan standar respons JSON seragam dengan kode status HTTP yang jelas:
 
-* 200 OK: Permintaan berhasil diproses.
+* 200 OK (E2-200): Permintaan berhasil diproses.
 
-* 400 Bad Request (ERR-REQ-400): Parameter query yang dikirimkan tidak valid (misalnya format taxPeriod salah atau projectId kosong).
+* 400 Bad Request (ERR-REQ-400): Parameter query yang dikirimkan tidak valid (misalnya format taxPeriod salah atau projectId salah).
 
 * 401 Unauthorized (ERR-AUTH-401): Token akses tidak valid, kedaluwarsa, atau tidak disertakan pada header Authorization.
 
