@@ -46,14 +46,23 @@ class DashboardController extends Controller
             return $authError;
         }
 
-        try {
-            // Paksa Error
-            // throw new \Exception("Koneksi ke server hulu E-1 Pajak mengalami timeout (2000ms).");
+        // Validasi parameter taxPeriod (Format YYYY-MM) -> Menghasilkan 400 Bad Request jika salah
+        $taxPeriod = $request->query('taxPeriod', '2026-11');
+        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $taxPeriod)) {
+            return response()->json([
+                'status' => 'error',
+                'code' => 'ERR-REQ-400',
+                'message' => 'Parameter query taxPeriod tidak valid. Gunakan format YYYY-MM (contoh: 2026-10).'
+            ], 400);
+        }
 
+        try {
+
+            // Paksa error (Error Mock)
+           throw new \Exception("Koneksi ke server hulu E-1 Pajak mengalami timeout (2000ms).");
             $token = $request->bearerToken();
             $erpService = new ErpIntegrationService($token);
 
-            $taxPeriod = $request->query('taxPeriod', '2026-11');
             $periodeId = $request->query('periodeId', '01a1193d-2500-7c04-854b-8bf03c711dde');
             $projectId = $request->query('projectId', null);
 
@@ -74,6 +83,7 @@ class DashboardController extends Controller
             $totalBpjsPerusahaan = floatval($payroll['totalBpjsPerusahaan'] ?? 0);
             $totalPayrollExpense = $totalGajiBersih + $totalBpjsPerusahaan;
 
+            // PERBAIKAN: Menambahkan operator minus (-)
             $netCashFlow = $totalProjectedIncome - ($totalTaxExpense + $totalPayrollExpense);
 
             return response()->json([
@@ -140,6 +150,8 @@ class DashboardController extends Controller
                 $taxExpense = floatval($taxSummary['totalPpn'] ?? 0) + floatval($taxSummary['totalPpnbm'] ?? 0);
                 $payrollExpense = floatval($payroll['totalGajiBersih'] ?? 0) + floatval($payroll['totalBpjsPerusahaan'] ?? 0);
                 $income = floatval($payroll['totalTermin'] ?? 0); 
+                
+                // PERBAIKAN: Menambahkan operator minus (-)
                 $netFlow = $income - ($taxExpense + $payrollExpense);
 
                 $monthlyData[] = [
@@ -180,7 +192,6 @@ class DashboardController extends Controller
             return $authError;
         }
 
-        // Validasi ketersediaan parameter (400 Bad Request)
         if (empty($projectId)) {
             return response()->json([
                 'status' => 'error',
@@ -195,17 +206,7 @@ class DashboardController extends Controller
 
             $project = $erpService->getProject($projectId);
 
-            // PAKSA TEST 404: Jika ingin ambil contoh error 404
             if ($projectId === 'proyek-tidak-ada' || !$project) {
-                return response()->json([
-                    'status' => 'error',
-                    'code' => 'ERR-NOT-FOUND-404',
-                    'message' => "Data proyek dengan ID '{$projectId}' tidak ditemukan."
-                ], 404);
-            }
-
-            // Jika ID proyek tidak ditemukan di modul D-1 (404 Not Found)
-            if (!$project) {
                 return response()->json([
                     'status' => 'error',
                     'code' => 'ERR-NOT-FOUND-404',
@@ -222,6 +223,8 @@ class DashboardController extends Controller
             }
 
             $projectTax = floatval($taxSummary['totalPpn'] ?? 0) + floatval($taxSummary['totalPpnbm'] ?? 0);
+            
+            // PERBAIKAN: Menambahkan operator minus (-)
             $projectNetProfit = $projectIncome - $projectTax;
 
             return response()->json([

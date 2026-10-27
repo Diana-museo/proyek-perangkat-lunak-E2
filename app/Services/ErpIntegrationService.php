@@ -18,20 +18,19 @@ class ErpIntegrationService
     public function getProject($projectId)
     {
         $projectId = $projectId ?? "01924b1e-7f32-7a81-9b12-45e8a1234567";
+        $baseUrl = env('D1_SERVICE_URL', 'http://127.0.0.1:4010');
         
         try {
             $response = Http::withToken($this->token)
                 ->timeout(2)
-                ->get("http://127.0.0.1:4010/projects/{$projectId}");
+                ->get("{$baseUrl}/projects/{$projectId}");
 
             if ($response->successful()) {
                 return $response->json('data') ?? $response->json();
             }
             
-            // Catat log jika server merespons tapi statusnya bukan 200 OK
             Log::warning("D-1 Live Server mengembalikan status non-success: " . $response->status());
         } catch (\Exception $e) {
-            // Catat log jika gagal koneksi / timeout / server mati
             Log::warning("Gagal koneksi ke D-1 Live Server, beralih ke Mock. Error: " . $e->getMessage());
         }
 
@@ -50,10 +49,12 @@ class ErpIntegrationService
     // 2. Modul D-2 (Kontrak & Termin)
     public function getTermins($projectId = null)
     {
+        $baseUrl = env('D2_SERVICE_URL', 'http://localhost:8000');
+
         try {
             $response = Http::withToken($this->token)
                 ->timeout(2)
-                ->get("http://localhost:8000/api/v1/termins", [
+                ->get("{$baseUrl}/api/v1/termins", [
                     'projectId' => $projectId
                 ]);
 
@@ -90,10 +91,12 @@ class ErpIntegrationService
     // 3. Modul E-1 (Pajak)
     public function getTaxSummary($taxPeriod, $projectId = null)
     {
+        $baseUrl = env('E1_SERVICE_URL', 'http://localhost:8080');
+
         try {
             $response = Http::withToken($this->token)
                 ->timeout(2)
-                ->get("http://localhost:8080/api/v1/tax/summary", [
+                ->get("{$baseUrl}/api/v1/tax/summary", [
                     'taxPeriod' => $taxPeriod,
                     'projectId' => $projectId
                 ]);
@@ -121,10 +124,12 @@ class ErpIntegrationService
     // 4. Modul F-5 (Payroll)
     public function getPayrollRekap($periodeId)
     {
+        $baseUrl = env('F5_SERVICE_URL', 'http://127.0.0.1:8000');
+
         try {
             $response = Http::withToken($this->token)
                 ->timeout(2)
-                ->get("http://127.0.0.1:8000/api/payroll/v1/rekap-biaya", [
+                ->get("{$baseUrl}/api/payroll/v1/rekap-biaya", [
                     'periodeId' => $periodeId
                 ]);
 
