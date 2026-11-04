@@ -44,7 +44,6 @@ E-2 terhubung secara terdistribusi dengan berbagai modul hulu dalam arsitektur E
 ## 🛠️ Spesifikasi Teknis & Prasyarat
 
 - **Bahasa & Framework**: PHP 8.4 & Laravel 13
-- **Database**: MySQL
 - **Autentikasi**: Bearer Token (Integrasi dengan Modul F-1 & Validasi Eksekutif)
 - **Testing**: Laravel Feature Tests (`DashboardApiTest`)
 
