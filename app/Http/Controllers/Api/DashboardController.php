@@ -9,43 +9,11 @@ use Illuminate\Http\Request;
 class DashboardController extends Controller
 {
     /**
-     * Helper untuk memvalidasi token atau hak akses (Simulasi F-1 Middleware/Check)
-     */
-    private function validateAuth(Request $request)
-    {
-        $token = $request->bearerToken();
-
-        // 1. Cek keberadaan token (401 Unauthorized)
-        if (!$token) {
-            return response()->json([
-                'status' => 'error',
-                'code' => 'ERR-AUTH-401',
-                'message' => 'Token akses tidak valid atau kedaluwarsa.'
-            ], 401);
-        }
-
-        // Simulasi jika token ditolak/role bukan eksekutif (403 Forbidden)
-        if ($token === 'invalid-token') {
-            return response()->json([
-                'status' => 'error',
-                'code' => 'ERR-AUTH-403',
-                'message' => 'Akun pengguna tidak memiliki hak akses tingkat eksekutif.'
-            ], 403);
-        }
-
-        return null;
-    }
-
-    /**
      * Endpoint Halaman 1: Ringkasan Eksekutif & Net Cash Flow
      * GET /api/v1/dashboard/aggregated-summary
      */
     public function aggregatedSummary(Request $request)
     {
-        if ($authError = $this->validateAuth($request)) {
-            return $authError;
-        }
-
         // Validasi parameter taxPeriod (Format YYYY-MM) -> Menghasilkan 400 Bad Request jika salah
         $taxPeriod = $request->query('taxPeriod', '2026-11');
         if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $taxPeriod)) {
@@ -119,10 +87,6 @@ class DashboardController extends Controller
      */
     public function monthlyTrend(Request $request)
     {
-        if ($authError = $this->validateAuth($request)) {
-            return $authError;
-        }
-
         $year = $request->query('year', '2026');
 
         // Validasi parameter query tahun (400 Bad Request)
@@ -188,10 +152,6 @@ class DashboardController extends Controller
      */
     public function projectDetail(Request $request, $projectId)
     {
-        if ($authError = $this->validateAuth($request)) {
-            return $authError;
-        }
-
         if (empty($projectId)) {
             return response()->json([
                 'status' => 'error',
@@ -257,10 +217,6 @@ class DashboardController extends Controller
      */
     public function financialIndicators(Request $request)
     {
-        if ($authError = $this->validateAuth($request)) {
-            return $authError;
-        }
-
         try {
             $token = $request->bearerToken();
             $erpService = new ErpIntegrationService($token);
@@ -312,5 +268,52 @@ class DashboardController extends Controller
                 'message' => 'Gagal mengagregasi indikator finansial: ' . $e->getMessage()
             ], 503);
         }
+    }
+
+    public function renderLiveDashboard(Request $request)
+    {
+        // Ambil token dari request atau gunakan token simulasi untuk tampilan web
+        $token = $request->bearerToken() ?? 'demo-token-eksekutif';
+        $erpService = new ErpIntegrationService($token);
+
+        // Memanggil data riil/mock dari modul hulu menggunakan service aslimu
+        $taxPeriod = '2026-10';
+        $periodeId = '01a1193d-2500-7c04-854b-8bf03c711dde';
+        
+        $termins = $erpService->getTermins();
+        $taxSummary = $erpService->getTaxSummary($taxPeriod);
+        $payroll = $erpService->getPayrollRekap($periodeId);
+
+        // Hitung total sesuai rancangan entitas ENT-KE2-01 & ENT-KE2-02
+        $totalProjectedIncome = 0;
+        foreach ($termins as $termin) {
+            $totalProjectedIncome += floatval($termin['terminValue'] ?? 0);
+        }
+
+        $totalTaxExpense = floatval($taxSummary['totalPpn'] ?? 0) + floatval($taxSummary['totalPpnbm'] ?? 0);
+        $totalPayrollExpense = floatval($payroll['totalGajiBersih'] ?? 0) + floatval($payroll['totalBpjsPerusahaan'] ?? 0);
+        $totalExpenses = $totalTaxExpense + $totalPayrollExpense;
+        $netCashFlow = $totalProjectedIncome - $totalExpenses;
+
+        $summaryData = [
+            'total_projected_income' => number_format($totalProjectedIncome, 2, '.', ''),
+            'total_tax_expense' => number_format($totalTaxExpense, 2, '.', ''),
+            'total_payroll_expense' => number_format($totalPayrollExpense, 2, '.', ''),
+            'net_cash_flow' => number_format($netCashFlow, 2, '.', ''),
+            'currency' => 'IDR',
+            'breakdown_sources' => [
+                'd2_termins_count' => count($termins),
+                'e1_tax_period' => $taxPeriod,
+                'f5_periode_id' => $periodeId
+            ]
+        ];
+
+        // Lempar data ke file Blade yang mencerminkan UI-KE2-02
+        return view('dashboard.live', [
+            'data' => $summaryData,
+            'termins' => $termins,
+            'taxSummary' => $taxSummary,
+            'payroll' => $payroll
+        ]);
     }
 }

@@ -7,7 +7,6 @@
 <p align="center">
   <img alt="Laravel" src="https://img.shields.io/badge/Laravel-13.0-FF2D20?style=flat-square&logo=laravel&logoColor=white">
   <img alt="PHP" src="https://img.shields.io/badge/PHP-8.4-777BB4?style=flat-square&logo=php&logoColor=white">
-  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16%2B-4169E1?style=flat-square&logo=postgresql&logoColor=white">
   <img alt="Status" src="https://img.shields.io/badge/Status-Production%20Ready-2EA44F?style=flat-square">
 </p>
 
@@ -45,7 +44,7 @@ E-2 terhubung secara terdistribusi dengan berbagai modul hulu dalam arsitektur E
 ## 🛠️ Spesifikasi Teknis & Prasyarat
 
 - **Bahasa & Framework**: PHP 8.4 & Laravel 13
-- **Database**: PostgreSQL / MySQL
+- **Database**: MySQL
 - **Autentikasi**: Bearer Token (Integrasi dengan Modul F-1 & Validasi Eksekutif)
 - **Testing**: Laravel Feature Tests (`DashboardApiTest`)
 
