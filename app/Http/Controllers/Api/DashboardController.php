@@ -14,7 +14,6 @@ class DashboardController extends Controller
      */
     public function aggregatedSummary(Request $request)
     {
-        // Validasi parameter taxPeriod (Format YYYY-MM) -> Menghasilkan 400 Bad Request jika salah
         $taxPeriod = $request->query('taxPeriod', '2026-11');
         if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $taxPeriod)) {
             return response()->json([
@@ -25,9 +24,6 @@ class DashboardController extends Controller
         }
 
         try {
-
-            // Paksa error (Error Mock)
-           throw new \Exception("Koneksi ke server hulu E-1 Pajak mengalami timeout (2000ms).");
             $token = $request->bearerToken();
             $erpService = new ErpIntegrationService($token);
 
@@ -51,7 +47,6 @@ class DashboardController extends Controller
             $totalBpjsPerusahaan = floatval($payroll['totalBpjsPerusahaan'] ?? 0);
             $totalPayrollExpense = $totalGajiBersih + $totalBpjsPerusahaan;
 
-            // PERBAIKAN: Menambahkan operator minus (-)
             $netCashFlow = $totalProjectedIncome - ($totalTaxExpense + $totalPayrollExpense);
 
             return response()->json([
@@ -89,7 +84,6 @@ class DashboardController extends Controller
     {
         $year = $request->query('year', '2026');
 
-        // Validasi parameter query tahun (400 Bad Request)
         if (!is_numeric($year) || strlen($year) !== 4) {
             return response()->json([
                 'status' => 'error',
@@ -115,7 +109,6 @@ class DashboardController extends Controller
                 $payrollExpense = floatval($payroll['totalGajiBersih'] ?? 0) + floatval($payroll['totalBpjsPerusahaan'] ?? 0);
                 $income = floatval($payroll['totalTermin'] ?? 0); 
                 
-                // PERBAIKAN: Menambahkan operator minus (-)
                 $netFlow = $income - ($taxExpense + $payrollExpense);
 
                 $monthlyData[] = [
@@ -183,8 +176,6 @@ class DashboardController extends Controller
             }
 
             $projectTax = floatval($taxSummary['totalPpn'] ?? 0) + floatval($taxSummary['totalPpnbm'] ?? 0);
-            
-            // PERBAIKAN: Menambahkan operator minus (-)
             $projectNetProfit = $projectIncome - $projectTax;
 
             return response()->json([
@@ -272,48 +263,250 @@ class DashboardController extends Controller
 
     public function renderLiveDashboard(Request $request)
     {
-        // Ambil token dari request atau gunakan token simulasi untuk tampilan web
-        $token = $request->bearerToken() ?? 'demo-token-eksekutif';
+        $token = session('token');
         $erpService = new ErpIntegrationService($token);
 
-        // Memanggil data riil/mock dari modul hulu menggunakan service aslimu
-        $taxPeriod = '2026-10';
-        $periodeId = '01a1193d-2500-7c04-854b-8bf03c711dde';
-        
+        $selectedMonth = $request->query('month', '2026-10');
+
         $termins = $erpService->getTermins();
-        $taxSummary = $erpService->getTaxSummary($taxPeriod);
+
+        $filteredTermins = [];
+        $totalInvoiceTertagih = 0;
+        
+        foreach ($termins as $termin) {
+            $dueDate = $termin['dueDate'] ?? '';
+            $status = $termin['status'] ?? '';
+            $value = floatval($termin['terminValue'] ?? 0);
+
+            if (str_starts_with($dueDate, $selectedMonth)) {
+                $projectId = $termin['projectId'] ?? '01924b1e-7f32-7a81-9b12-45e8a1234567';
+                $projectDetail = $erpService->getProject($projectId);
+
+                $termin['projectName'] = $projectDetail['projectName'] ?? 'Proyek Kanonis Utama';
+                $termin['clientName'] = $projectDetail['clientName'] ?? 'Mitra Klien Hulu';
+
+                $filteredTermins[] = $termin;
+                
+                if ($status === 'TERTAGIH' || $status === 'SIAP_DITAGIH') {
+                    $totalInvoiceTertagih += $value;
+                }
+            }
+        }
+
+        $taxSummary = $erpService->getTaxSummary($selectedMonth);
+        $periodeId = '01a1193d-2500-7c04-854b-8bf03c711dde';
         $payroll = $erpService->getPayrollRekap($periodeId);
 
-        // Hitung total sesuai rancangan entitas ENT-KE2-01 & ENT-KE2-02
         $totalProjectedIncome = 0;
-        foreach ($termins as $termin) {
+        foreach ($filteredTermins as $termin) {
             $totalProjectedIncome += floatval($termin['terminValue'] ?? 0);
         }
 
         $totalTaxExpense = floatval($taxSummary['totalPpn'] ?? 0) + floatval($taxSummary['totalPpnbm'] ?? 0);
         $totalPayrollExpense = floatval($payroll['totalGajiBersih'] ?? 0) + floatval($payroll['totalBpjsPerusahaan'] ?? 0);
-        $totalExpenses = $totalTaxExpense + $totalPayrollExpense;
-        $netCashFlow = $totalProjectedIncome - $totalExpenses;
+
+        if (count($filteredTermins) === 0) {
+            $totalTaxExpense = 0;
+            $totalPayrollExpense = 0;
+        }
+
+        $totalPengeluaran = $totalTaxExpense + $totalPayrollExpense;
+        $netCashFlow = $totalProjectedIncome - $totalPengeluaran;
+
+        $expenseRatio = $totalProjectedIncome > 0 ? round(($totalPengeluaran / $totalProjectedIncome) * 100, 1) : 0;
+        if ($expenseRatio > 100) $expenseRatio = 100;
 
         $summaryData = [
-            'total_projected_income' => number_format($totalProjectedIncome, 2, '.', ''),
-            'total_tax_expense' => number_format($totalTaxExpense, 2, '.', ''),
-            'total_payroll_expense' => number_format($totalPayrollExpense, 2, '.', ''),
-            'net_cash_flow' => number_format($netCashFlow, 2, '.', ''),
-            'currency' => 'IDR',
-            'breakdown_sources' => [
-                'd2_termins_count' => count($termins),
-                'e1_tax_period' => $taxPeriod,
-                'f5_periode_id' => $periodeId
-            ]
+            'total_projected_income' => $totalProjectedIncome,
+            'total_invoice_tertagih' => $totalInvoiceTertagih,
+            'total_pengeluaran' => $totalPengeluaran,
+            'net_cash_flow' => $netCashFlow,
+            'expense_ratio' => $expenseRatio,
         ];
 
-        // Lempar data ke file Blade yang mencerminkan UI-KE2-02
-        return view('dashboard.live', [
+        return view('dashboard.index', [
             'data' => $summaryData,
-            'termins' => $termins,
+            'termins' => $filteredTermins,
             'taxSummary' => $taxSummary,
-            'payroll' => $payroll
+            'payroll' => $payroll,
+            'selectedMonth' => $selectedMonth
+        ]);
+    }
+
+    public function renderPemasukan(Request $request)
+    {
+        $token = session('token');
+        $erpService = new ErpIntegrationService($token);
+
+        try {
+            $liveTermins = $erpService->getTermins();
+            $isSyncFailed = false;
+        } catch (\Exception $e) {
+            $liveTermins = [];
+            $isSyncFailed = true;
+        }
+
+        $targetMonths = [
+            '2026-07' => 'Juli 2026',
+            '2026-08' => 'Agustus 2026',
+            '2026-09' => 'September 2026',
+            '2026-10' => 'Oktober 2026',
+            '2026-11' => 'November 2026',
+            '2026-12' => 'Desember 2026',
+        ];
+
+        $monthlyIncome = [];
+        foreach ($targetMonths as $key => $label) {
+            $monthlyIncome[$key] = [
+                'label' => $label,
+                'total' => 0
+            ];
+        }
+
+        $enrichedTermins = [];
+        foreach ($liveTermins as $t) {
+            $dueDate = $t['dueDate'] ?? '';
+            $monthKey = substr($dueDate, 0, 7);
+            $value = floatval($t['terminValue'] ?? 0);
+
+            $projectId = $t['projectId'] ?? '01924b1e-7f32-7a81-9b12-45e8a1234567';
+            $projectDetail = $erpService->getProject($projectId);
+
+            $t['projectName'] = $projectDetail['projectName'] ?? 'Proyek Infrastruktur Utama';
+            $t['clientName'] = $projectDetail['clientName'] ?? 'PT Klien Mitra Utama';
+
+            $enrichedTermins[] = $t;
+
+            if (isset($monthlyIncome[$monthKey])) {
+                $monthlyIncome[$monthKey]['total'] += $value;
+            }
+        }
+
+        return view('dashboard.pemasukan', [
+            'liveTermins' => $enrichedTermins,
+            'monthlyIncome' => $monthlyIncome,
+            'isSyncFailed' => $isSyncFailed
+        ]);
+    }
+
+    public function renderPengeluaran(Request $request)
+    {
+        $token = session('token');
+        $erpService = new ErpIntegrationService($token);
+
+        try {
+            $taxData = $erpService->getTaxSummary('2026-10');
+            $payrollData = $erpService->getPayrollRekap('01a1193d-2500-7c04-854b-8bf03c711dde');
+            $isSyncFailed = false;
+        } catch (\Exception $e) {
+            $taxData = [];
+            $payrollData = [];
+            $isSyncFailed = true;
+        }
+
+        $totalPpn = floatval($taxData['totalPpn'] ?? 0);
+        $totalPpnbm = floatval($taxData['totalPpnbm'] ?? 0);
+        $taxExpense = $totalPpn + $totalPpnbm;
+
+        $gajiBersih = floatval($payrollData['totalGajiBersih'] ?? 0);
+        $bpjsPrs = floatval($payrollData['totalBpjsPerusahaan'] ?? 0);
+        $payrollExpense = $gajiBersih + $bpjsPrs;
+        
+        $totalPengeluaran = $taxExpense + $payrollExpense;
+
+        $payrollPercentage = $totalPengeluaran > 0 ? round(($payrollExpense / $totalPengeluaran) * 100, 1) : 0;
+        $taxPercentage = $totalPengeluaran > 0 ? round(($taxExpense / $totalPengeluaran) * 100, 1) : 0;
+
+        return view('dashboard.pengeluaran', [
+            'taxData' => $taxData,
+            'payrollData' => $payrollData,
+            'taxExpense' => $taxExpense,
+            'payrollExpense' => $payrollExpense,
+            'totalPengeluaran' => $totalPengeluaran,
+            'payrollPercentage' => $payrollPercentage,
+            'taxPercentage' => $taxPercentage,
+            'isSyncFailed' => $isSyncFailed
+        ]);
+    }
+
+    public function renderProyek(Request $request)
+    {
+        $token = session('token');
+        $erpService = new ErpIntegrationService($token);
+
+        try {
+            $projects = $erpService->getProjects();
+            $isSyncFailed = false;
+        } catch (\Exception $e) {
+            $projects = [];
+            $isSyncFailed = true;
+        }
+
+        $projects = is_array($projects) ? $projects : [];
+
+        $statusFilter = $request->query('status', 'ALL');
+
+        $filteredProjects = [];
+        $totalProyekAktif = 0;
+        $proyekTertahan = 0;
+
+        foreach ($projects as $p) {
+            $status = $p['status'] ?? 'REGISTERED';
+            $isActive = $p['active'] ?? true;
+            $poReceived = $p['poReceived'] ?? false;
+
+            if ($isActive && $status === 'REGISTERED') {
+                $totalProyekAktif++;
+            }
+            if (!$poReceived) {
+                $proyekTertahan++;
+            }
+
+            if ($statusFilter === 'ALL' || $status === $statusFilter) {
+                $filteredProjects[] = $p;
+            }
+        }
+
+        return view('dashboard.proyek', [
+            'projects' => $filteredProjects,
+            'totalProyekAktif' => $totalProyekAktif,
+            'proyekTertahan' => $proyekTertahan,
+            'statusFilter' => $statusFilter,
+            'isSyncFailed' => $isSyncFailed
+        ]);
+    }
+
+    public function refreshData(Request $request)
+    {
+        $token = session('token');
+        $erpService = new ErpIntegrationService($token);
+        
+        $startTime = microtime(true);
+
+        $upstreamStatus = $erpService->checkUpstreamStatus();
+
+        $activeCount = count(array_filter($upstreamStatus));
+        $totalUpstream = count($upstreamStatus);
+
+        if ($activeCount === $totalUpstream) {
+            $status = 'synced';
+            $message = 'Berhasil menyinkronkan seluruh data dari server hulu.';
+        } elseif ($activeCount > 0) {
+            $status = 'fallback';
+            $message = 'Sebagian server hulu tidak aktif. Menggunakan data cadangan (Fallback).';
+        } else {
+            $status = 'fallback';
+            $message = 'Semua server hulu mati. Sistem berjalan menggunakan Default Data (Fallback).';
+        }
+
+        $duration = round((microtime(true) - $startTime) * 1000);
+
+        return response()->json([
+            'status' => $status,
+            'message' => $message,
+            'upstream_details' => $upstreamStatus,
+            'duration_ms' => $duration,
+            'timestamp' => date('d M Y, H:i:s') . ' WIB'
         ]);
     }
 }
