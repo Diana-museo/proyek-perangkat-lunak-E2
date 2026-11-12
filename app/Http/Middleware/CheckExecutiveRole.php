@@ -4,69 +4,27 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckExecutiveRole
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // 1. Ambil token dari Header (Authorization: Bearer <token>) atau Query Parameter ?token=
-        $header = $request->header('Authorization');
-        $token = null;
+        // Cek apakah token sudah ada di Session Laravel
+        $token = session('token');
 
-        if ($header && str_starts_with($header, 'Bearer ')) {
-            $token = substr($header, 7);
-        } else {
-            $token = $request->query('token');
-        }
-
-        // Jika tidak ada token sama sekali
         if (!$token) {
-            return response()->json([
-                'status' => 'error',
-                'code' => 'ERR-AUTH-401',
-                'message' => 'Token akses tidak ditemukan.'
-            ], 401);
+            return redirect('/login')->withErrors(['login_error' => 'Sesi habis atau token tidak ditemukan, silakan login terlebih dahulu.']);
         }
 
-        // 2. Ambil URL F-1 dari .env
-        $baseUrl = env('F1_SERVICE_URL', 'http://127.0.0.1:4010');
+        // Ambil role langsung dari session yang disimpan saat login sukses
+        $userRole = strtoupper(session('userRole') ?? '');
+        
+        // Daftar role yang diizinkan mengakses E-2 (Eksekutif)
+        $allowedRoles = ['CEO', 'COO', 'CFO', 'KEPALA_FINANCE'];
 
-        try {
-            // 3. Tembak HTTP Request nyata ke Prism F-1 temanmu di jaringan Wi-Fi
-            $response = Http::withToken($token)
-                ->timeout(3)
-                ->get("{$baseUrl}/accounts/current"); // Endpoint F-1
-
-            if ($response->failed()) {
-                return response()->json([
-                    'status' => 'error',
-                    'code' => 'ERR-AUTH-401',
-                    'message' => 'Token tidak valid atau kedaluwarsa di F-1.'
-                ], 401);
-            }
-
-            // 4. Cek Role dari respon F-1 (CEO, COO, CFO)
-            $userData = $response->json();
-            $userRole = strtoupper($userData['role'] ?? '');
-            $allowedRoles = ['CEO', 'COO', 'CFO'];
-
-            if (!in_array($userRole, $allowedRoles)) {
-                // Tampilkan halaman 403 Forbidden jika role tidak berwenang
-                return response()->view('dashboard.forbidden', [], 403);
-            }
-
-            // Simpan data identitas ke request agar bisa dipakai Controller
-            $request->attributes->set('user_identity', $userData);
-
-        } catch (\Exception $e) {
-            // Jika Prism F-1 offline / gagal diakses
-            return response()->json([
-                'status' => 'error',
-                'code' => 'ERR-DS-503',
-                'message' => 'Gagal terhubung ke layanan F-1: ' . $e->getMessage()
-            ], 503);
+        if (!in_array($userRole, $allowedRoles)) {
+            return response()->view('auth.forbidden-access', [], 403);
         }
 
         return $next($request);
