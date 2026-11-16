@@ -16,7 +16,7 @@ class ErpIntegrationService
 
     public function verifyRoleAndToken($token)
     {
-        $baseUrl = env('F1_SERVICE_URL', 'http://127.0.0.1:4010');
+        $baseUrl = env('F1_SERVICE_URL', 'http://127.0.0.1:4100');
 
         try {
             $response = Http::withToken($token)
@@ -113,10 +113,14 @@ class ErpIntegrationService
     {
         $baseUrl = env('D1_SERVICE_URL', 'http://localhost:3000/api/v1');
 
+        $queryParams = array_merge([
+            'limit' => 100 
+        ], $params);
+
         try {
             $response = Http::withToken($this->token)
                 ->timeout(3)
-                ->get("{$baseUrl}/projects", $params);
+                ->get("{$baseUrl}/projects", $queryParams);
 
             if ($response->successful()) {
                 $data = $response->json('data') ?? $response->json('items') ?? $response->json();
@@ -224,50 +228,76 @@ class ErpIntegrationService
     // 3. Modul E-1 (Pajak)
     public function getTaxSummary($taxPeriod, $projectId = null)
     {
-        $baseUrl = env('E1_SERVICE_URL', 'http://127.0.0.1:8000');
+        // JANGAN GUNAKAN localhost! Gunakan 127.0.0.1 secara eksplisit
+        $baseUrl = env('E1_SERVICE_URL', 'http://127.0.0.1:8087');
+        $token = $this->token;        
 
         try {
-            $response = Http::withToken($this->token)
-                ->timeout(2)
+            $response = Http::withToken($token)
+                ->timeout(5)
                 ->get("{$baseUrl}/api/v1/tax/summary", [
                     'taxPeriod' => $taxPeriod,
                     'projectId' => $projectId
                 ]);
 
             if ($response->successful()) {
-                return $response->json('data') ?? $response->json();
+                $json = $response->json();
+                // Pastikan mengembalikan data array, bukan null
+                return $json['data'] ?? [
+                    "taxPeriod" => $taxPeriod,
+                    "invoiceCount" => 0,
+                    "totalDpp" => "0.00",
+                    "totalPpn" => "0.00",
+                    "totalPpnbm" => "0.00",
+                    "paymentStatus" => "NOT_RECORDED"
+                ];
             }
 
-            Log::warning("E-1 Live Server mengembalikan status non-success: " . $response->status());
+            // Jika E-1 menolak karena token kedaluwarsa/tidak sah (401)
+            if ($response->status() === 401) {
+                // Hapus sesi token yang kedaluwarsa
+                session()->forget(['token', 'roleCode']);
+                
+                // Alihkan paksa ke halaman login dengan pesan
+                // (Atau lempar pengecualian khusus untuk ditangkap middleware)
+                redirect()->route('login')->with('error', 'Sesi Anda telah kedaluwarsa. Silakan login kembali.')->send();
+                exit;
+            }
+
+            \Illuminate\Support\Facades\Log::warning("E-1 mengembalikan status non-success: " . $response->status());
+
         } catch (\Exception $e) {
-            Log::warning("Gagal koneksi ke E-1 Live Server, beralih ke Mock. Error: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error("Gagal koneksi HTTP ke E-1: " . $e->getMessage());
         }
 
-        // FALLBACK: Mock Data E-1
+        // FALLBACK MUTLAK: Menjamin data tidak akan pernah null meskipun koneksi putus
         return [
             "taxPeriod" => $taxPeriod,
-            "invoiceCount" => 1,
-            "totalDpp" => "100000000.00",
-            "totalPpn" => "11000000.00",
+            "invoiceCount" => 0,
+            "totalDpp" => "0.00",
+            "totalPpn" => "0.00",
             "totalPpnbm" => "0.00",
-            "paymentStatus" => "CONFIRMED"
+            "paymentStatus" => "NOT_RECORDED"
         ];
     }
 
     // 4. Modul F-5 (Payroll)
     public function getPayrollRekap($periodeId)
     {
-        $baseUrl = env('F5_SERVICE_URL', 'http://127.0.0.1:8000');
+        $baseUrl = env('F5_SERVICE_URL', 'http://127.0.0.1:8001');
 
+        $token = 'mock-e2';
         try {
-            $response = Http::withToken($this->token)
+            $response = Http::withToken($token)
                 ->timeout(2)
                 ->get("{$baseUrl}/api/payroll/v1/rekap-biaya", [
                     'periodeId' => $periodeId
                 ]);
 
             if ($response->successful()) {
-                return $response->json();
+                $json = $response->json();
+                // Ambil dari key 'data' jika dibungkus, atau ambil root-nya langsung
+                return $json['data'] ?? $json;
             }
 
             Log::warning("F-5 Live Server mengembalikan status non-success: " . $response->status());
@@ -276,24 +306,100 @@ class ErpIntegrationService
         }
 
         // FALLBACK: Mock Data F-5
-        return [
-            "periodeId" => $periodeId,
-            "namaPeriode" => "Oktober 2026",
-            "tanggalMulai" => "2026-10-01",
-            "tanggalAkhir" => "2026-10-31",
-            "statusPeriode" => "Disetujui",
-            "adaData" => true,
-            "jumlahKaryawan" => 1,
-            "totalPendapatan" => 7750000.0,
-            "totalBonus" => 750000.0,
-            "totalPotongan" => 200000.0,
-            "totalBpjsKaryawan" => 65000.0,
-            "totalGajiBersih" => 7485000.0,
-            "totalBpjsPerusahaan" => 260000.0,
-            "totalTermin" => 25000000.0,
-            "jumlahTermin" => 1,
-            "totalBiaya" => null,
-            "diperbaruiPada" => "2026-10-13T19:43:00+07:00"
-        ];
+        // return [
+        //     "periodeId" => $periodeId,
+        //     "namaPeriode" => "Oktober 2026",
+        //     "tanggalMulai" => "2026-10-01",
+        //     "tanggalAkhir" => "2026-10-31",
+        //     "statusPeriode" => "Disetujui",
+        //     "adaData" => true,
+        //     "jumlahKaryawan" => 1,
+        //     "totalPendapatan" => 7750000.0,
+        //     "totalBonus" => 750000.0,
+        //     "totalPotongan" => 200000.0,
+        //     "totalBpjsKaryawan" => 65000.0,
+        //     "totalGajiBersih" => 7485000.0,
+        //     "totalBpjsPerusahaan" => 260000.0,
+        //     "totalTermin" => 25000000.0,
+        //     "jumlahTermin" => 1,
+        //     "totalBiaya" => null,
+        //     "diperbaruiPada" => "2026-10-13T19:43:00+07:00"
+        // ];
     }
+
+    // 4. Modul F-5 (Payroll - Dinamis berdasarkan Bulan / UUID)
+    // public function getPayrollRekap($identifier)
+    // {
+    //     $baseUrl = env('F5_SERVICE_URL', 'http://127.0.0.1:8001');
+    //     $token = 'mock-e2';
+    //     $periodeId = $identifier;
+
+    //     // Jika yang dikirim adalah format bulan (YYYY-MM), cari UUID-nya secara dinamis ke F-5
+    //     if (preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $identifier)) {
+    //         $periodeId = null;
+    //         try {
+    //             $response = Http::withToken($token)
+    //                 ->timeout(2)
+    //                 ->get("{$baseUrl}/api/payroll/v1/periode");
+
+    //             if ($response->successful()) {
+    //                 $json = $response->json();
+    //                 $periods = $json['data'] ?? $json;
+    //                 if (is_array($periods)) {
+    //                     foreach ($periods as $p) {
+    //                         $tglMulai = $p['tanggal_mulai'] ?? $p['tanggalMulai'] ?? $p['startDate'] ?? '';
+    //                         // Cocokkan awalan tanggal mulai dengan bulan yang dipilih (misal '2026-10')
+    //                         if (str_starts_with($tglMulai, $identifier)) {
+    //                             $periodeId = $p['id'] ?? $p['periodeId'] ?? $p['uuid'] ?? null;
+    //                             break;
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         } catch (\Exception $e) {
+    //             Log::warning("Gagal mengambil list periode dari F-5: " . $e->getMessage());
+    //         }
+
+    //         // Jika bulan tersebut tidak terdaftar di F-5, kembalikan data nol secara bersih
+    //         if (!$periodeId) {
+    //             return [
+    //                 "periodeId" => null,
+    //                 "namaPeriode" => "Tidak ada data (" . $identifier . ")",
+    //                 "statusPeriode" => "Kosong",
+    //                 "adaData" => false,
+    //                 "jumlahKaryawan" => 0,
+    //                 "totalPendapatan" => 0.0,
+    //                 "totalBonus" => 0.0,
+    //                 "totalPotongan" => 0.0,
+    //                 "totalBpjsKaryawan" => 0.0,
+    //                 "totalGajiBersih" => 0.0,
+    //                 "totalBpjsPerusahaan" => 0.0,
+    //                 "totalTermin" => 0.0,
+    //                 "jumlahTermin" => 0,
+    //                 "totalBiaya" => 0.0,
+    //                 "diperbaruiPada" => now()->toIso8601String()
+    //             ];
+    //         }
+    //     }
+
+    //     // Ambil rekap biaya menggunakan UUID periode yang didapat secara dinamis
+    //     try {
+    //         $response = Http::withToken($token)
+    //             ->timeout(2)
+    //             ->get("{$baseUrl}/api/payroll/v1/rekap-biaya", [
+    //                 'periodeId' => $periodeId
+    //             ]);
+
+    //         if ($response->successful()) {
+    //             $json = $response->json();
+    //             return $json['data'] ?? $json;
+    //         }
+
+    //         Log::warning("F-5 Live Server mengembalikan status non-success: " . $response->status());
+    //     } catch (\Exception $e) {
+    //         Log::warning("Gagal koneksi ke F-5 Live Server: " . $e->getMessage());
+    //     }
+
+    //     return [];
+    // }
 }

@@ -168,8 +168,10 @@ class DashboardController extends Controller
             }
 
             $termins = $erpService->getTermins($projectId);
-            $taxSummary = $erpService->getTaxSummary('2026-10', $projectId);
-
+            // $taxSummary = $erpService->getTaxSummary('2026-10', $projectId);
+            $taxPeriod = $request->query('taxPeriod', '2026-10');
+            $taxSummary = $erpService->getTaxSummary($taxPeriod, $projectId);
+            
             $projectIncome = 0;
             foreach ($termins as $termin) {
                 $projectIncome += floatval($termin['terminValue'] ?? 0);
@@ -294,8 +296,51 @@ class DashboardController extends Controller
         }
 
         $taxSummary = $erpService->getTaxSummary($selectedMonth);
-        $periodeId = '01a1193d-2500-7c04-854b-8bf03c711dde';
-        $payroll = $erpService->getPayrollRekap($periodeId);
+        // $periodeId = '01a1193d-2500-7c04-854b-8bf03c711dde';
+        // $payroll = $erpService->getPayrollRekap($periodeId);
+        // $payroll = $erpService->getPayrollRekap($selectedMonth);
+
+        // 1. Cari UUID periode F-5 secara dinamis berdasarkan $selectedMonth
+        $periodeId = null;
+        try {
+            $response = \Illuminate\Support\Facades\Http::withToken('mock-e2')
+                ->timeout(2)
+                ->get(env('F5_SERVICE_URL', 'http://127.0.0.1:8001') . '/api/payroll/v1/periode');
+
+            if ($response->successful()) {
+                $json = $response->json();
+                $periods = $json['data'] ?? $json;
+                if (is_array($periods)) {
+                    foreach ($periods as $p) {
+                        $tglMulai = $p['tanggal_mulai'] ?? $p['tanggalMulai'] ?? $p['startDate'] ?? '';
+                        // Cocokkan awalan tanggal mulai dengan bulan yang dipilih (misal '2026-10' atau '2026-11')
+                        if (str_starts_with($tglMulai, $selectedMonth)) {
+                            $periodeId = $p['id'] ?? $p['periodeId'] ?? $p['uuid'] ?? null;
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Biarkan null jika gagal terhubung ke F-5
+        }
+
+        // 2. Ambil data rekap payroll jika UUID-nya ketemu, jika tidak set nilai 0 secara bersih
+        if ($periodeId) {
+            $payroll = $erpService->getPayrollRekap($periodeId);
+        } else {
+            $payroll = [
+                "namaPeriode" => "Tidak ada data (" . $selectedMonth . ")",
+                "statusPeriode" => "Kosong",
+                "jumlahKaryawan" => 0,
+                "totalPendapatan" => 0,
+                "totalBonus" => 0,
+                "totalPotongan" => 0,
+                "totalBpjsKaryawan" => 0,
+                "totalGajiBersih" => 0,
+                "totalBpjsPerusahaan" => 0,
+            ];
+        }
 
         $totalProjectedIncome = 0;
         foreach ($filteredTermins as $termin) {
@@ -394,9 +439,67 @@ class DashboardController extends Controller
         $token = session('token');
         $erpService = new ErpIntegrationService($token);
 
+        // Ambil bulan dari parameter URL (?month=YYYY-MM), default ke '2026-10'
+        $selectedMonth = $request->query('month', '2026-10');
+
+        // try {
+        //     // Gunakan $selectedMonth agar dinamis mengambil data pajak dari E-1
+        //     $taxData = $erpService->getTaxSummary($selectedMonth);
+        //     $payrollData = $erpService->getPayrollRekap('01a1193d-2500-7c04-854b-8bf03c711dde');
+        //     $isSyncFailed = false;
+        // } catch (\Exception $e) {
+        //     $taxData = [];
+        //     $payrollData = [];
+        //     $isSyncFailed = true;
+        // }
+
         try {
-            $taxData = $erpService->getTaxSummary('2026-10');
-            $payrollData = $erpService->getPayrollRekap('01a1193d-2500-7c04-854b-8bf03c711dde');
+            // 1. Ambil data pajak dari E-1 secara dinamis berdasarkan bulan
+            $taxData = $erpService->getTaxSummary($selectedMonth);
+
+            // 2. Cari UUID periode F-5 secara dinamis berdasarkan $selectedMonth (Tanpa Hardcode!)
+            $periodeId = null;
+            try {
+                $response = \Illuminate\Support\Facades\Http::withToken('mock-e2')
+                    ->timeout(2)
+                    ->get(env('F5_SERVICE_URL', 'http://127.0.0.1:8001') . '/api/payroll/v1/periode');
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    $periods = $json['data'] ?? $json;
+                    if (is_array($periods)) {
+                        foreach ($periods as $p) {
+                            $tglMulai = $p['tanggal_mulai'] ?? $p['tanggalMulai'] ?? $p['startDate'] ?? '';
+                            // Jika tanggal mulai periode cocok dengan bulan yang dipilih (misal '2026-11')
+                            if (str_starts_with($tglMulai, $selectedMonth)) {
+                                $periodeId = $p['id'] ?? $p['periodeId'] ?? $p['uuid'] ?? null;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // Biarkan null jika gagal
+            }
+
+            // 3. Jika periode untuk bulan tersebut tidak ditemukan di F-5 (misal Nov/Des kosong), 
+            // set data payroll kosong/nol agar tidak mengambil data Oktober.
+            if ($periodeId) {
+                $payrollData = $erpService->getPayrollRekap($periodeId);
+            } else {
+                $payrollData = [
+                    "namaPeriode" => "Tidak ada data (" . $selectedMonth . ")",
+                    "statusPeriode" => "Kosong",
+                    "jumlahKaryawan" => 0,
+                    "totalPendapatan" => 0,
+                    "totalBonus" => 0,
+                    "totalPotongan" => 0,
+                    "totalBpjsKaryawan" => 0,
+                    "totalGajiBersih" => 0,
+                    "totalBpjsPerusahaan" => 0,
+                ];
+            }
+
             $isSyncFailed = false;
         } catch (\Exception $e) {
             $taxData = [];
@@ -417,6 +520,8 @@ class DashboardController extends Controller
         $payrollPercentage = $totalPengeluaran > 0 ? round(($payrollExpense / $totalPengeluaran) * 100, 1) : 0;
         $taxPercentage = $totalPengeluaran > 0 ? round(($taxExpense / $totalPengeluaran) * 100, 1) : 0;
 
+        // dd($selectedMonth, $taxData);
+
         return view('dashboard.pengeluaran', [
             'taxData' => $taxData,
             'payrollData' => $payrollData,
@@ -425,7 +530,8 @@ class DashboardController extends Controller
             'totalPengeluaran' => $totalPengeluaran,
             'payrollPercentage' => $payrollPercentage,
             'taxPercentage' => $taxPercentage,
-            'isSyncFailed' => $isSyncFailed
+            'isSyncFailed' => $isSyncFailed,
+            'selectedMonth' => $selectedMonth
         ]);
     }
 
