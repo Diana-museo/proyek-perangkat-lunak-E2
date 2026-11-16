@@ -1,0 +1,2 @@
+ini adalah file txt untuk inisialisasi folder dokumen E2, 
+tempat menyimpan dokumen pengerjaan capstone.
