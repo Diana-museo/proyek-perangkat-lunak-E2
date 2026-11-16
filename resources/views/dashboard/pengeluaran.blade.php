@@ -6,37 +6,38 @@
 @section('content')
 <div class="max-w-7xl mx-auto space-y-6">
 
-    @php
-        $erp = new \App\Services\ErpIntegrationService(session('token'));
-        $taxData = $erp->getTaxSummary('2026-10');
-        $payrollData = $erp->getPayrollRekap('01a1193d-2500-7c04-854b-8bf03c711dde');
-        
-        // Perhitungan Komponen Pajak E-1
-        $totalPpn = floatval($taxData['totalPpn'] ?? 0);
-        $totalPpnbm = floatval($taxData['totalPpnbm'] ?? 0);
-        $taxExpense = $totalPpn + $totalPpnbm;
+    <!-- Filter Bar Kalender Bulan & Tahun -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <form method="GET" action="{{ url('/dashboard/pengeluaran') }}" class="flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Periode Bulan & Tahun</label>
+                    <input type="month" name="month" value="{{ $selectedMonth ?? '2026-10' }}" class="bg-white border border-slate-300 rounded-lg px-4 py-2 text-sm text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-900 shadow-sm">
+                </div>
+            </div>
 
-        // Perhitungan Komponen Payroll F-5
-        $gajiBersih = floatval($payrollData['totalGajiBersih'] ?? 0);
-        $bpjsPrs = floatval($payrollData['totalBpjsPerusahaan'] ?? 0);
-        $payrollExpense = $gajiBersih + $bpjsPrs;
-        
-        // Total Pengeluaran Keseluruhan
-        $totalPengeluaran = $taxExpense + $payrollExpense;
+            <div class="flex items-center space-x-2">
+                <button type="submit" class="bg-blue-900 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-800 transition">
+                    Terapkan Filter
+                </button>
+                <a href="{{ url('/dashboard/pengeluaran') }}" class="bg-slate-100 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-200 transition">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
 
-        // Persentase Komposisi untuk Stacked Progress Bar
-        $payrollPct = $totalPengeluaran > 0 ? round(($payrollExpense / $totalPengeluaran) * 100, 1) : 0;
-        $taxPct = $totalPengeluaran > 0 ? round(($taxExpense / $totalPengeluaran) * 100, 1) : 0;
-    @endphp
+    <!-- Informasi Filter Aktif -->
+    <div class="text-xs text-slate-500 bg-slate-100 px-4 py-2 rounded-lg font-medium inline-block">
+        Filter Aktif Bulan: <span class="font-bold text-slate-700">{{ $selectedMonth ?? '2026-10' }}</span>
+    </div>
 
-    <!-- Card Ringkasan Utama & Visualisasi Komposisi Donut/Progress Bar -->
+    <!-- Card Ringkasan Utama & Visualisasi Komposisi -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
         <div class="flex flex-wrap justify-between items-start border-b border-slate-100 pb-4 gap-4">
             <div>
-                <div class="flex items-center gap-2">
-                    <h2 class="text-base font-bold text-slate-900">Pengeluaran Bulanan Terintegrasi</h2>
-                </div>
-                <p class="text-xs text-slate-500 mt-1">Periode Pajak: {{ $taxData['taxPeriod'] ?? '2026-10' }} · Payroll: {{ $payrollData['namaPeriode'] ?? 'Oktober 2026' }}</p>
+                <h2 class="text-base font-bold text-slate-900">Pengeluaran Bulanan Terintegrasi</h2>
+                <p class="text-xs text-slate-500 mt-1">Periode Pajak: {{ $taxData['taxPeriod'] ?? $selectedMonth }} · Payroll: {{ $payrollData['namaPeriode'] ?? 'Oktober 2026' }}</p>
             </div>
             <div class="text-right">
                 <p class="text-[10px] text-slate-400 font-bold uppercase">Total Pengeluaran Keseluruhan</p>
@@ -48,13 +49,12 @@
         <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
             <div class="flex justify-between items-center text-xs font-bold text-slate-700">
                 <span>Komposisi Alokasi Pengeluaran</span>
-                <span class="text-slate-500 font-semibold">Payroll: <strong class="text-blue-900">{{ $payrollPct }}%</strong> | Pajak: <strong class="text-purple-900">{{ $taxPct }}%</strong></span>
+                <span class="text-slate-500 font-semibold">Payroll: <strong class="text-blue-900">{{ $payrollPercentage }}%</strong> | Pajak: <strong class="text-purple-900">{{ $taxPercentage }}%</strong></span>
             </div>
             
-            <!-- Bar Stacked -->
             <div class="w-full bg-slate-200 h-3.5 rounded-full overflow-hidden flex shadow-inner">
-                <div class="bg-blue-900 h-full transition-all duration-500" style="width: {{ $payrollPct }}%" title="Beban Payroll: {{ $payrollPct }}%"></div>
-                <div class="bg-purple-700 h-full transition-all duration-500" style="width: {{ $taxPct }}%" title="Beban Pajak: {{ $taxPct }}%"></div>
+                <div class="bg-blue-900 h-full transition-all duration-500" style="width: {{ $payrollPercentage }}%"></div>
+                <div class="bg-purple-700 h-full transition-all duration-500" style="width: {{ $taxPercentage }}%"></div>
             </div>
 
             <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
@@ -64,10 +64,10 @@
         </div>
     </div>
 
-    <!-- Struktur Card Pengeluaran & Grid Kelengkapan F-5 & E-1 Berdampingan (Side-by-Side) -->
+    <!-- Grid Detail Samping-Menyamping (F-5 & E-1) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        <!-- Kolom 1: Rincian Payroll Lengkap (Modul F-5) -->
+        <!-- Kolom 1: Rincian Payroll (Modul F-5) -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between space-y-4">
             <div>
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
@@ -109,17 +109,17 @@
                     </div>
                     <div class="flex justify-between py-1 border-b border-slate-50 bg-slate-50/80 px-2 rounded">
                         <span class="font-bold text-slate-700">Total Gaji Bersih Dibayarkan</span>
-                        <span class="font-bold text-slate-900">Rp {{ number_format($gajiBersih, 0, ',', '.') }}</span>
+                        <span class="font-bold text-slate-900">Rp {{ number_format(floatval($payrollData['totalGajiBersih'] ?? 0), 0, ',', '.') }}</span>
                     </div>
                     <div class="flex justify-between py-1 px-2 rounded bg-blue-50/50">
                         <span class="font-bold text-blue-900">Beban BPJS Perusahaan</span>
-                        <span class="font-bold text-blue-900">Rp {{ number_format($bpjsPrs, 0, ',', '.') }}</span>
+                        <span class="font-bold text-blue-900">Rp {{ number_format(floatval($payrollData['totalBpjsPerusahaan'] ?? 0), 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Kolom 2: Rincian Pajak & Status Kepatuhan (Modul E-1) -->
+        <!-- Kolom 2: Rincian Pajak (Modul E-1) -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between space-y-4">
             <div>
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
@@ -133,7 +133,7 @@
                 <div class="space-y-3 text-xs">
                     <div class="flex justify-between py-1 border-b border-slate-50">
                         <span class="text-slate-600">Masa Pajak / Periode</span>
-                        <span class="font-semibold text-slate-900">{{ $taxData['taxPeriod'] ?? '2026-10' }}</span>
+                        <span class="font-semibold text-slate-900">{{ $taxData['taxPeriod'] ?? $selectedMonth }}</span>
                     </div>
                     <div class="flex justify-between py-1 border-b border-slate-50">
                         <span class="text-slate-600">Jumlah Invoice Terhitung</span>
@@ -141,11 +141,11 @@
                     </div>
                     <div class="flex justify-between py-1 border-b border-slate-50">
                         <span class="text-slate-600">Akumulasi Total PPN</span>
-                        <span class="font-semibold text-slate-900">Rp {{ number_format($totalPpn, 0, ',', '.') }}</span>
+                        <span class="font-semibold text-slate-900">Rp {{ number_format(floatval($taxData['totalPpn'] ?? 0), 0, ',', '.') }}</span>
                     </div>
                     <div class="flex justify-between py-1 border-b border-slate-50">
                         <span class="text-slate-600">Akumulasi Total PPnBM</span>
-                        <span class="font-semibold text-slate-900">Rp {{ number_format($totalPpnbm, 0, ',', '.') }}</span>
+                        <span class="font-semibold text-slate-900">Rp {{ number_format(floatval($taxData['totalPpnbm'] ?? 0), 0, ',', '.') }}</span>
                     </div>
                     <div class="flex justify-between py-2 px-3 rounded bg-slate-50 items-center">
                         <span class="font-bold text-slate-700">Status Pembayaran</span>
@@ -159,6 +159,7 @@
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 @endsection
