@@ -5,9 +5,9 @@
 **ERP PT Anaheim Nimbus Universal** · Capstone Project PPL Kelas E
 
 <p align="center">
-  <img alt="Laravel" src="https://img.shields.io/badge/Laravel-13.0-FF2D20?style=flat-square&logo=laravel&logoColor=white">
-  <img alt="PHP" src="https://img.shields.io/badge/PHP-8.4-777BB4?style=flat-square&logo=php&logoColor=white">
-  <img alt="Status" src="https://img.shields.io/badge/Status-Production%20Ready-2EA44F?style=flat-square">
+  <img alt="Laravel" src="https://img.shields.io/badge/Laravel-11.x/12.x-FF2D20?style=flat-square&logo=laravel&logoColor=white">
+  <img alt="PHP" src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=flat-square&logo=php&logoColor=white">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Demo%20Ready-2EA44F?style=flat-square">
 </p>
 
 </div>
@@ -16,36 +16,35 @@
 
 ## 💡 Tentang Modul E-2
 
-Modul **E-2** bertindak sebagai *nerve center* finansial bagi PT Anaheim Nimbus Universal. Modul ini beroperasi secara **stateless dan read-only**, artinya modul ini tidak menyimpan database transaksi mandiri atau menerima input manual, melainkan berfungsi murni sebagai **agregator terdistribusi** yang menghimpun, mengolah, dan menyajikan metrik arus kas, profitabilitas proyek, serta indikator kesehatan keuangan secara *real-time* dari berbagai sistem hulu ERP untuk kebutuhan direksi.
+Modul **E-2** bertindak sebagai *nerve center* finansial bagi PT Anaheim Nimbus Universal. Modul ini beroperasi secara **stateless dan read-only**, berfungsi murni sebagai **agregator terdistribusi** yang menghimpun, mengolah, dan menyajikan metrik arus kas, profitabilitas proyek, serta indikator kesehatan keuangan secara dinamis dari berbagai sistem hulu ERP untuk kebutuhan direksi.
 
 ---
 
 ### 🌐 Ekosistem Integrasi Lintas Modul
-E-2 terhubung secara terdistribusi dengan berbagai modul hulu dalam arsitektur ERP:
+E-2 terhubung secara terdistribusi dengan berbagai modul hulu melalui HTTP Client dan token otentikasi:
 
-- **Modul F-1 (Autentikasi & Manajemen Pengguna):** Validasi *Bearer Token*, manajemen sesi, dan kontrol hak akses berbasis peran (RBAC) untuk Direksi dan Kepala Finance.
-- **Modul D-1 (Registrasi Proyek):** Sinkronisasi master data proyek, alokasi anggaran, dan status operasional.
-- **Modul D-2 (Kontrak & Invoice):** Penarikan data tagihan masuk, termin, dan piutang klien.
-- **Modul E-1 (Pajak & e-Faktur):** Konsumsi ringkasan kewajiban pajak keluaran melalui endpoint agregasi.
-- **Modul F-5 (Payroll & Gaji):** Rekapitulasi pengeluaran operasional rutin untuk pembayaran gaji pegawai.
-
----
-
-## ⚡ Fitur Unggulan
-
-- **Executive Financial Summary (`/dashboard/aggregated-summary`)**: Agregasi metrik kesehatan perusahaan secara global (Total Proyeksi Pendapatan, Beban Pajak, Beban Payroll, dan *Net Cash Flow*).
-- **Monthly Trend Analysis (`/cashflow/monthly`)**: Visualisasi tren arus kas bulanan berdasarkan parameter tahun operasional.
-- **Project Profitability Drill-Down (`/cashflow/project/{projectId}`)**: Analisis keuangan mendalam per proyek untuk memantau profitabilitas dan performa finansial tiap unit kerja.
-- **Financial Health Indicators (`/dashboard/financial-indicators`)**: Evaluasi indikator kesehatan finansial perusahaan secara otomatis.
-- **Secure Executive RBAC**: Pembatasan akses ketat berbasis *Bearer Token* yang memastikan hanya jajaran eksekutif yang berhak mengakses laporan finansial.
+- **Modul F-1 (Autentikasi & Manajemen Pengguna):** Validasi *Bearer Token* JWT, sinkronisasi *secret/claims* (`accountId`, `roleCode`), dan manajemen sesi lintas layanan.
+- **Modul D-1 (Registrasi Proyek):** Sinkronisasi master data proyek, metadata, dan status operasional.
+- **Modul D-2 (Kontrak & Invoice):** Penarikan data termin pembayaran, nilai kontrak, dan status penagihan.
+- **Modul E-1 (Pajak & e-Faktur):** Konsumsi ringkasan kewajiban pajak keluaran secara dinamis berdasarkan parameter `taxPeriod` (format `YYYY-MM`).
+- **Modul F-5 (Payroll & Gaji):** Resolusi UUID periode secara dinamis berdasarkan bulan yang dipilih untuk menarik rekapitulasi pengeluaran gaji dan BPJS.
 
 ---
 
-## 🛠️ Spesifikasi Teknis & Prasyarat
+## ⚡ Fitur & Halaman Utama
 
-- **Bahasa & Framework**: PHP 8.4 & Laravel 13
-- **Autentikasi**: Bearer Token (Integrasi dengan Modul F-1 & Validasi Eksekutif)
-- **Testing**: Laravel Feature Tests (`DashboardApiTest`)
+- **Dasbor Interaktif & Filter Bulan (`/dashboard` & `/dashboard/pengeluaran`)**: Antarmuka web berbasis Blade dengan fitur filter periode bulanan (Oktober, November, Desember 2026, dll.) yang terhubung secara *live* ke E-1 dan F-5.
+- **Executive Financial Summary (`/api/v1/dashboard/aggregated-summary`)**: Agregasi metrik kesehatan perusahaan global (Total Proyeksi Pendapatan, Beban Pajak, Beban Payroll, dan *Net Cash Flow*).
+- **Monthly Trend Analysis (`/api/v1/cashflow/monthly`)**: Visualisasi tren arus kas bulanan berdasarkan parameter tahun operasional.
+- **Project Profitability Drill-Down (`/api/v1/cashflow/project/{projectId}`)**: Analisis keuangan mendalam per proyek.
+- **Financial Health Indicators (`/api/v1/dashboard/financial-indicators`)**: Evaluasi indikator kesehatan finansial otomatis.
+
+---
+
+## 🛡️ Resiliensi & Penanganan Error (*Graceful Fallback*)
+Untuk menjaga kestabilan demo, E-2 dilengkapi sistem penanganan error tingkat lanjut:
+* **Timeouts & Upstream Protection**: Pembatasan waktu tunggu (*timeout*) koneksi ke modul hulu (2-5 detik) guna mencegah kemacetan (*bottleneck*).
+* **Safe Fallback**: Apabila modul hulu mengalami *offline*, *timeout*, atau data belum tersedia, sistem secara otomatis mengembalikan nilai *default* (nol/kosong) alih-alih merusak tampilan (*crash*), lengkap dengan opsi penanganan sesi kedaluwarsa (`401 Unauthorized`).
 
 ---
 
@@ -60,9 +59,13 @@ composer install
    cp .env.example .env
    php artisan key:generate
 ```
-3. **Migrasi dan Seed Data Demo**
+3. **Atur URL Layanan Hulu di .env**
 ```bash
-   php artisan migrate:fresh --seed
+   F1_SERVICE_URL=http://127.0.0.1:4100
+   D1_SERVICE_URL=http://127.0.0.1:3000/api/v1
+   D2_SERVICE_URL=http://127.0.0.1:8000
+   E1_SERVICE_URL=http://127.0.0.1:8087
+   F5_SERVICE_URL=http://127.0.0.1:8001
 ```
 4. **Jalankan Server Lokal**
 ```bash
@@ -72,7 +75,7 @@ composer install
 ---
 
 ## 📡 Daftar Endpoint API Utama
-
+Endpoint API di bawah ini (/api/v1/...) disediakan sebagai contract layer / layanan headless untuk keperluan pengujian otomatis (Postman/Swagger), integrasi dengan sistem luar, atau konsumsi klien alternatif. Adapun antarmuka web utama (Blade) E-2 merender data secara langsung melalui pemanggilan Service internal (ErpIntegrationService), bukan dengan memanggil endpoint API ini secara asinkron.
 | Endpoint | Metode | Deskripsi | Status Code |
 |---|---|---|---|
 |/api/dashboard/aggregated-summary|GET|Dasbor agregat dari modul D-1, D-2, E-1, F-5| 200, 401, 403, 503 |
